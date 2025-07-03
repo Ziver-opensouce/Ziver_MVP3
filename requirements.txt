@@ -1,8 +1,9 @@
 fastapi
 uvicorn[standard]
-pydantic
+pydantic==2.7.1 # Specify version for consistency
+pydantic-settings==2.2.1 # New dependency for BaseSettings
 python-dotenv
-sqlalchemy
-psycopg2-binary # or asyncpg if using async driver
+sqlalchemy==2.0.29 # Specify version
+psycopg2-binary # For PostgreSQL
 passlib[bcrypt] # For password hashing
-python-jose[cryptography] # For JWT (if implemented for authentication)
+python-jose[cryptography] # For JWT
