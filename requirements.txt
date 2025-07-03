@@ -1,1 +1,8 @@
-
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+sqlalchemy
+psycopg2-binary # or asyncpg if using async driver
+passlib[bcrypt] # For password hashing
+python-jose[cryptography] # For JWT (if implemented for authentication)
