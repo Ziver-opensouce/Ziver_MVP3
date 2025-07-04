@@ -116,6 +116,47 @@ def read_users_me(current_user: Annotated[models.User, Depends(get_active_user)]
     """
     return current_user
 
+
+# --- NEW 2FA ENDPOINTS ---
+@router.post("/users/me/2fa/enable", response_model=user_schemas.TwoFASetupResponse)
+def enable_2fa(current_user: Annotated[models.User, Depends(get_active_user)], db: Annotated[Session, Depends(database.get_db)]):
+    """
+    Enables 2FA for the current user. Returns a secret and QR code image for authenticator app setup.
+    The user must then confirm by providing a code from their app.
+    """
+    return two_fa_service.enable_2fa_for_user(db, current_user)
+
+@router.post("/users/me/2fa/confirm")
+def confirm_2fa(two_fa_code: user_schemas.TwoFACode,
+                current_user: Annotated[models.User, Depends(get_active_user)],
+                db: Annotated[Session, Depends(database.get_db)]):
+    """
+    Confirms 2FA setup by verifying the first code from the user's authenticator app.
+    This step is crucial to activate 2FA for the user.
+    """
+    if two_fa_service.confirm_2fa_setup(db, current_user, two_fa_code.code):
+        return {"message": "2FA successfully enabled and confirmed!"}
+    # two_fa_service.confirm_2fa_setup will raise HTTPException on failure
+    return {"message": "2FA confirmation failed. Please check your code and try again."}
+
+
+@router.post("/users/me/2fa/disable")
+def disable_2fa(two_fa_code: user_schemas.TwoFACode,
+                current_user: Annotated[models.User, Depends(get_active_user)],
+                db: Annotated[Session, Depends(database.get_db)]):
+    """
+    Disables 2FA for the current user after verifying a current code.
+    """
+    if two_fa_service.disable_2fa_for_user(db, current_user, two_fa_code.code):
+        return {"message": "2FA successfully disabled!"}
+    # two_fa_service.disable_2fa_for_user will raise HTTPException on failure
+    return {"message": "2FA disable failed. Please check your code and try again."}
+
+# --- END OF NEW 2FA ENDPOINTS ---
+
+# ... (Rest of your API routes: ZP Mining, Interactive Tasks, Micro-Job, Referral System) ...
+
+
 @router.post("/users/me/daily-checkin", response_model=mining_schemas.ZPClaimResponse)
 def perform_daily_checkin(current_user: Annotated[models.User, Depends(get_active_user)], db: Annotated[Session, Depends(database.get_db)]):
     """
