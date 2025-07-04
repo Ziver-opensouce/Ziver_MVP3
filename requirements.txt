@@ -7,3 +7,5 @@ sqlalchemy==2.0.29 # Specify version
 psycopg2-binary # For PostgreSQL
 passlib[bcrypt] # For password hashing
 python-jose[cryptography] # For JWT
+pyotp==2.9.0
+qrcode==7.4.2
