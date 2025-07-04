@@ -42,6 +42,20 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+# --- ADDED THESE NEW SCHEMAS FOR 2FA ---
+class TwoFACode(BaseModel):
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit code from authenticator app")
+
+class TwoFASetupResponse(BaseModel):
+    secret: str
+    qr_code_image: str # Base64 encoded PNG data URL
+    message: str
+
+class UserLoginWith2FA(UserLogin):
+    """Schema for a login attempt that *might* include a 2FA code."""
+    two_fa_code: Optional[str] = Field(None, min_length=6, max_length=6, description="Optional 2FA code if required for login.")
+# --- END OF 2FA SCHEMAS ADDITION ---
+
 class TokenData(BaseModel):
     """Schema for data stored inside JWT token."""
     email: Optional[str] = None
