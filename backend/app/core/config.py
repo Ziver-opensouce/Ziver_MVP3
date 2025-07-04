@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 # Default to 60 minutes for JWT
 
+# --- ADD THIS NEW LINE FOR 2FA APP NAME ---
+    APP_NAME: str = "Ziver" # This name will appear in authenticator apps (e.g., "Ziver (user@example.com)")
+    # --- END OF 2FA APP NAME ADDITION ---
+
     # Ziver specific configurations (Phase 1)
     ZP_DAILY_CHECKIN_BONUS: int = 50 # ZP awarded for daily check-in
     MINING_CYCLE_HOURS: int = 4 # Duration of one mining cycle
