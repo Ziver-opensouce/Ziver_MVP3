@@ -1,14 +1,29 @@
 {
-  "name": "TON Dev Environment",
+  "name": "TON Blueprint Dev Environment (Ziver)",
   "build": {
     "dockerfile": "Dockerfile"
   },
   "settings": {
     "terminal.integrated.shell.linux": "/bin/bash"
   },
-  "postCreateCommand": "pip3 install toncli",
+  // Commands to run after the container is created
+  "postCreateCommand": "npm install -g npm@latest && npm install -g pnpm && npm install -g yarn", // Keep npm updated and install other package managers if desired
   "extensions": [
-    "ms-python.python",
-    "rust-lang.rust-analyzer"
-  ]
+    "ms-python.python",              // For your FastAPI backend
+    "ms-vscode.vscode-typescript-next", // Official TypeScript extension for Blueprint
+    "ton-community.vscode-func",     // Essential for FunC language support in VS Code
+    "ton-community.vscode-tact"      // Optional: If you ever decide to use Tact language
+  ],
+  "forwardPorts": [8000], // Assuming your FastAPI runs on port 8000
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "files.watcherExclude": {
+          "**/.git/**": true,
+          "**/node_modules/**": true,
+          "**/build/**": true // Exclude build artifacts from VS Code's file watcher
+        }
+      }
+    }
+  }
 }
