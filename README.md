@@ -1,6 +1,6 @@
 # Ziver: Gamifying Web3 Engagement & Empowering the TON Ecosystem (Hackathon MVP)
 
-![Ziver Logo Placeholder](https://example.com/ziver_logo.png) **Deliverable URL:** [https://github.com/Zaidux/Ziver_MVP](https://github.com/Zaidux/Ziver_MVP)
+![Ziver Logo](https://olive-deliberate-piranha-369.mypinata.cloud/ipfs/QmdKf7XTWwcuV1t7g51haWDiCiMXNFoDGMUjX8BSLGLGto) **Deliverable URL:** [https://github.com/Zaidux/Ziver_MVP](https://github.com/Zaidux/Ziver_MVP)
 
 ## Project Overview
 
