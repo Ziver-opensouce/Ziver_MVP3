@@ -32,7 +32,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # --- ADD THESE TWO NEW LINES FOR 2FA ---
+    # --- ADDED THESE TWO NEW LINES FOR 2FA ---
     two_fa_secret = Column(String, nullable=True) # Stores the base32 secret for TOTP
     is_2fa_enabled = Column(Boolean, default=False)
     # --- END OF 2FA ADDITION ---
