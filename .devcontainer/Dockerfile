@@ -1,27 +1,15 @@
-# Use a robust base image for devcontainers
-FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
+# Use a Dev Container base image with Node.js 18 pre-installed.
+# You can change '18' to '20' if you prefer a newer Node.js version.
+FROM mcr.microsoft.com/devcontainers/javascript-node:18
 
-# Install system dependencies needed for TON tools (C++ build process)
-# build-essential for make/gcc, git for cloning, curl for general use,
-# python3-pip for toncli, cmake for TON build system, libssl-dev and zlib1g-dev for TON dependencies.
+# Install git (usually already there but good to ensure)
 RUN apt-get update && \
-    apt-get install -y build-essential git curl python3-pip cmake libssl-dev zlib1g-dev && \
+    apt-get install -y git && \
     rm -rf /var/lib/apt/lists/*
 
-# Clone the official TON repository (which contains the C++ func and fift)
-# --recursive is important to get all submodules needed for the build
-RUN git clone --recursive https://github.com/ton-blockchain/ton.git /opt/ton
-
-# Build TON tools (func, fift, lite-client)
-# Navigate to the crypto directory where the makefile for func/fift resides, then run make
-RUN cd /opt/ton/crypto && make
-
-# Add the TON tools' executable directory to the system PATH
-# So func, fift, lite-client can be found directly
-ENV PATH="/opt/ton/crypto:${PATH}"
-
-# Set pip to default to pip3 (good practice, as you had)
+# Install Python and pip if you need them for your FastAPI backend in the same Codespace.
+# If your FastAPI backend is already working, you might already have these, but including for completeness.
+RUN apt-get update && \
+    apt-get install -y python3-pip && \
+    rm -rf /var/lib/apt/lists/*
 RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
-
-# Clean up build directories to reduce image size (optional, but good practice)
-RUN rm -rf /opt/ton/crypto/CMakeFiles /opt/ton/crypto/build
