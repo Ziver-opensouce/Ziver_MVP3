@@ -1,0 +1,14 @@
+{
+  "name": "TON Dev Environment",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "postCreateCommand": "pip3 install toncli",
+  "extensions": [
+    "ms-python.python",
+    "rust-lang.rust-analyzer"
+  ]
+}
