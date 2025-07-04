@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 # Default to 60 minutes for JWT
 
-# --- ADD THIS NEW LINE FOR 2FA APP NAME ---
+# --- ADDED THIS NEW LINE FOR 2FA APP NAME ---
     APP_NAME: str = "Ziver" # This name will appear in authenticator apps (e.g., "Ziver (user@example.com)")
     # --- END OF 2FA APP NAME ADDITION ---
 
