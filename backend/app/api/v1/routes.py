@@ -17,6 +17,10 @@ from app.services import referrals as referrals_service
 from app.core import security
 from app.core.config import settings
 
+# --- ADDED THIS NEW IMPORT FOR 2FA SERVICE ---
+from app.services import two_factor_auth as two_fa_service
+# --- END OF 2FA SERVICE IMPORT ---
+
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/token")
