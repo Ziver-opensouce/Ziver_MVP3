@@ -6,8 +6,6 @@
 
 ;; Define op-codes if they are not in imports/op-codes.fc
 ;; These are common default opcodes for Blueprint, if your template didn't generate them:
-const op::deposit = 0x7362d2b5; // Example deposit opcode (can be any unique 32-bit value)
-const op::release = 0x4f728c77; // Example release opcode
 
 ;; --- Storage Layout ---
 ;; Contract data will store:
