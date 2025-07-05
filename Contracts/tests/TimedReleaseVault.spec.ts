@@ -16,7 +16,7 @@ describe('TimedReleaseVault', () => {
     let timedReleaseVault: SandboxContract<TimedReleaseVault>;
 
     // Declare initialReleaseTimestamp here so it's accessible to all tests
-    let initialReleaseTimestamp: number; // Added this line
+    let initialReleaseTimestamp: bigint; // Changed type to bigint
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
@@ -25,13 +25,13 @@ describe('TimedReleaseVault', () => {
 
         deployer = await blockchain.treasury('deployer');
 
-        // Assign the value here
-        initialReleaseTimestamp = Math.floor(Date.now() / 1000) + 60; // Example: 60 seconds from now
+        // Assign the value here, explicitly converting to BigInt
+        initialReleaseTimestamp = BigInt(Math.floor(Date.now() / 1000) + 60); // Example: 60 seconds from now
 
         // Create the message body with the expected initial data
         const deployBody = beginCell()
             .storeUint(1, 32) // Opcode 1 for initialization
-            .storeUint(initialReleaseTimestamp, 64)
+            .storeUint(initialReleaseTimestamp, 64) // Store BigInt
             .endCell();
 
         const deployResult = await timedReleaseVault.sendDeploy(deployer.getSender(), toNano('0.05'), deployBody);
@@ -44,12 +44,11 @@ describe('TimedReleaseVault', () => {
         });
     });
 
-    it('should deploy and set initial state correctly', async () => { // Renamed for clarity
-        // Assuming your wrapper has a getContractData method as discussed
+    it('should deploy and set initial state correctly', async () => {
         const { owner_address, release_timestamp, is_released } = await timedReleaseVault.getContractData();
 
         expect(owner_address.equals(deployer.address)).toBe(true);
-        expect(release_timestamp).toBe(initialReleaseTimestamp); // Now initialReleaseTimestamp is defined
+        expect(release_timestamp).toBe(initialReleaseTimestamp); // Now comparing BigInt with BigInt
         expect(is_released).toBe(0);
     });
 
