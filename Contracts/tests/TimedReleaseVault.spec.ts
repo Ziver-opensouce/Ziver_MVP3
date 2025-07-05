@@ -1,5 +1,5 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Cell, toNano, beginCell } from '@ton/core'; // Import beginCell
+import { Cell, toNano, beginCell } from '@ton/core';
 import { TimedReleaseVault } from '../wrappers/TimedReleaseVault';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
@@ -15,6 +15,9 @@ describe('TimedReleaseVault', () => {
     let deployer: SandboxContract<TreasuryContract>;
     let timedReleaseVault: SandboxContract<TimedReleaseVault>;
 
+    // Declare initialReleaseTimestamp here so it's accessible to all tests
+    let initialReleaseTimestamp: number; // Added this line
+
     beforeEach(async () => {
         blockchain = await Blockchain.create();
 
@@ -22,17 +25,16 @@ describe('TimedReleaseVault', () => {
 
         deployer = await blockchain.treasury('deployer');
 
-        // Define the initial data for the contract
-        const initialOpcode = 1; // As expected by your FunC contract for initialization
-        const initialReleaseTimestamp = Math.floor(Date.now() / 1000) + 60; // Example: 60 seconds from now
+        // Assign the value here
+        initialReleaseTimestamp = Math.floor(Date.now() / 1000) + 60; // Example: 60 seconds from now
 
         // Create the message body with the expected initial data
         const deployBody = beginCell()
-            .storeUint(initialOpcode, 32)
+            .storeUint(1, 32) // Opcode 1 for initialization
             .storeUint(initialReleaseTimestamp, 64)
             .endCell();
 
-        const deployResult = await timedReleaseVault.sendDeploy(deployer.getSender(), toNano('0.05'), deployBody); // Pass the deployBody
+        const deployResult = await timedReleaseVault.sendDeploy(deployer.getSender(), toNano('0.05'), deployBody);
 
         expect(deployResult.transactions).toHaveTransaction({
             from: deployer.address,
@@ -42,11 +44,12 @@ describe('TimedReleaseVault', () => {
         });
     });
 
-    it('should deploy', async () => {
-        // Now you can also add assertions to check the initial state after deployment
-        const { owner_address, release_timestamp, is_released } = await timedReleaseVault.getContractData(); // Assuming your wrapper has this helper
+    it('should deploy and set initial state correctly', async () => { // Renamed for clarity
+        // Assuming your wrapper has a getContractData method as discussed
+        const { owner_address, release_timestamp, is_released } = await timedReleaseVault.getContractData();
+
         expect(owner_address.equals(deployer.address)).toBe(true);
-        expect(release_timestamp).toBe(initialReleaseTimestamp);
+        expect(release_timestamp).toBe(initialReleaseTimestamp); // Now initialReleaseTimestamp is defined
         expect(is_released).toBe(0);
     });
 
