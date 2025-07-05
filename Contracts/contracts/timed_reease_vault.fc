@@ -3,7 +3,8 @@
 
 ;; --- Standard Library Includes ---
 ;; This line is CRUCIAL. It brings in most common FunC functions, types, and macros.
-#include "std.fc";
+#include "imports/std.fc";
+#include "imports/op-codes.fc"; ;; Or wherever op-codes.fc actually resides, usually in imports.
 ;; Usually, op-codes are defined in a separate file, or in std.fc for common ones.
 ;; If Blueprint generated an 'op-codes.fc' in your 'contracts/' folder, make sure it's there.
 ;; If not, we define them here. Let's assume you might have one, or define them locally for now.
