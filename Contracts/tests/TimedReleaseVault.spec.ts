@@ -13,7 +13,7 @@ describe('TimedReleaseVault', () => {
 
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let timedReleaseVault: SandboxContract<TimedReeaseVault>;
+    let timedReleaseVault: SandboxContract<TimedReleaseVault>;
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
