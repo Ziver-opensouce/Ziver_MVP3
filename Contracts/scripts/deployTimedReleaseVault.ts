@@ -1,13 +1,13 @@
 import { toNano } from '@ton/core';
-import { TimedReeaseVault } from '../wrappers/TimedReeaseVault';
+import { TimedReleaseVault } from '../wrappers/TimedReleaseVault';
 import { compile, NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
-    const timedReeaseVault = provider.open(TimedReeaseVault.createFromConfig({}, await compile('TimedReeaseVault')));
+    const timedReleaseVault = provider.open(TimedReleaseVault.createFromConfig({}, await compile('TimedReleaseVault')));
 
-    await timedReeaseVault.sendDeploy(provider.sender(), toNano('0.05'));
+    await timedReleaseVault.sendDeploy(provider.sender(), toNano('0.05'));
 
-    await provider.waitForDeploy(timedReeaseVault.address);
+    await provider.waitForDeploy(timedReleaseVault.address);
 
-    // run methods on `timedReeaseVault`
+    // run methods on `timedReleaseVault`
 }
