@@ -2,9 +2,9 @@
 ;; Standard op-codes for your contract
 
 ;; Basic op-codes for TimedReleaseVault
-const op::deposit = 0x1234;   ;; Example opcode for deposit. Choose a unique one.
-const op::release = 0x5678;   ;; Example opcode for release. Choose a unique one.
+const op::deposit = 0x7362d2b5;   ;; A common opcode for deposit in Blueprint projects
+const op::release = 0x4f728c77;   ;; A common opcode for release in Blueprint projects
 
 ;; You might also include other common op-codes if your project uses them
-;; For example, for an "init" message if you want a dedicated one, though your current code uses 0x1.
+;; For example, the init opcode if you want a dedicated one, though your current code uses 0x1 directly.
 ;; const op::init = 1;
