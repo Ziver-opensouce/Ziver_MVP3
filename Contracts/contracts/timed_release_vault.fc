@@ -118,6 +118,8 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
     return 0;
 }
 
+;; ... (previous code) ...
+
 ;; --- Get Methods (Public read-only functions) ---
 
 ;; get_owner(): Returns the owner address
@@ -137,3 +139,9 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
     var (_, _, is_released) = parse_data();
     return is_released;
 }
+
+;; get_contract_data(): Returns all contract data
+(slice, int, int) get_contract_data() method_id {
+    return parse_data();
+}
+
