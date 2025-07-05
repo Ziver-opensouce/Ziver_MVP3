@@ -1,0 +1,130 @@
+;; contracts/main.fc
+;; TimedReleaseVault Smart Contract
+
+;; This contract holds TON and releases it to a specified owner
+;; after a predefined timestamp.
+
+;; Op-codes for messages
+const op::deposit = 0x723c3445; ;; Arbitrary opcode for a deposit message
+const op::release = 0x51811e51; ;; Arbitrary opcode for a release message
+
+;; --- Storage Layout ---
+;; Contract data will store:
+;; 1. owner_address: MsgAddress - The address allowed to release funds.
+;; 2. release_timestamp: int - Unix timestamp when funds can be released.
+;; 3. is_released: int - Flag (0 or 1) to indicate if funds have been released.
+
+;; --- Helper Functions ---
+
+;; get_data() loads the contract's persistent data
+(slice) get_data() inline {
+        return get_c4(); ;; get_c4() loads the contract's data cell
+}
+
+;; set_data() stores the contract's persistent data
+() set_data(cell new_data) inline {
+        set_c4(new_data); ;; set_c4() stores the contract's data cell
+}
+
+;; parse_data() decodes the contract's data cell
+(slice, int, int) parse_data(slice data_slice) inline {
+        var owner_address = data_slice~load_msg_addr();
+            var release_timestamp = data_slice~load_uint(64);
+                var is_released = data_slice~load_int(1); ;; 1 bit for boolean
+                    return (owner_address, release_timestamp, is_released);
+}
+
+;; store_data() encodes the contract's data into a cell
+cell store_data(slice owner_address, int release_timestamp, int is_released) inline {
+        return begin_cell()
+                .store_slice(owner_address)
+                        .store_uint(release_timestamp, 64)
+                                .store_int(is_released, 1)
+                                        .end_cell();
+}
+
+;; --- Internal Message Handler ---
+(int) recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg) impure {
+        slice cs = in_msg; ;; Message body slice
+            int flags = in_msg_full.in_msg_full_get_mode(); ;; Get message mode for flags
+                slice sender_address = in_msg_full.in_msg_full_get_sender_address(); ;; Get sender address
+
+                    ;; Load current contract data
+                        var (owner_address, release_timestamp, is_released) = parse_data(get_data());
+
+                            ;; Check if this is the initial deployment message (empty data & contract balance is zero)
+                                ;; or a specific initialization message from deployer (if you want to setup owner/time then)
+                                    ;; For simplicity, we'll assume the first message sets the owner and time
+                                        ;; In a real scenario, this would be part of a proper deployment script.
+                                            if (in_msg.slice_empty?()) { ;; If no body, assume initial deployment or just accepting funds
+                                                    ;; If contract has no data yet, this is likely first init
+                                                            if (get_data().slice_empty?()) {
+                                                                            ;; For a proper initialization, you'd pass owner_address and release_timestamp
+                                                                                        ;; in a specific internal message (with an opcode) after deployment.
+                                                                                                    ;; For now, we'll assume it's set by a deploy script, or handled in a specific 'init' message.
+                                                                                                                ;; For this MVP, let's make it simpler: the deployer is the owner and sets initial time.
+                                                                                                                            ;; We'll use a specific opcode for initialization if current data is empty.
+                                                            } else {
+                                                                             ;; If data already exists and message is empty, just accept funds
+                                                            }
+                                                                    return 0;
+                                            }
+
+                                                ;; Load opcode from the message
+                                                    int op = cs~load_uint(32);
+
+                                                        ;; Handle deposit message (any sender can deposit)
+                                                            if (op == op::deposit) {
+                                                                        ;; Funds are automatically added to my_balance
+                                                                                ;; No specific logic needed here other than just accepting the message.
+                                                                                        ;; Contract simply holds the balance.
+                                                                                                return 0;
+                                                            }
+
+                                                                ;; Handle release message
+                                                                    if (op == op::release) {
+                                                                                throw_unless(77, sender_address.equal_slice(owner_address)); ;; Only owner can send release message
+                                                                                        throw_unless(78, is_released == 0); ;; Funds not yet released
+                                                                                                throw_unless(79, now() >= release_timestamp); ;; Time must have passed
+
+                                                                                                        ;; Send all contract balance back to owner
+                                                                                                                ;; flags: 1 - carry all remaining balance, 0 - no bounce (don't send back if fails)
+                                                                                                                        send_raw_message(
+                                                                                                                                        begin_cell()
+                                                                                                                                                        .store_uint(0x18, 6) ;; int_msg_info$100000
+                                                                                                                                                                        .store_slice(owner_address) ;; destination address
+                                                                                                                                                                                        .store_coins(my_balance) ;; amount (entire balance)
+                                                                                                                                                                                                        .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; skip next_load_bits (mode, bounce, etc.)
+                                                                                                                                                                                                                        .end_cell(),
+                                                                                                                                                                                                                                    1 ;; mode 1: pay fees from contract balance, send all remaining balance
+                                                                                                                        );
+
+                                                                                                                                ;; Update contract data to mark as released
+                                                                                                                                        set_data(store_data(owner_address, release_timestamp, 1));
+                                                                                                                                                return 0;
+                                                                    }
+
+                                                                        ;; If we reach here, it's an unhandled opcode.
+                                                                            throw(0xffff); ;; Throw generic error
+                                                                                return 0;
+}
+
+;; --- Get Methods (Public read-only functions) ---
+
+;; get_owner(): Returns the owner address
+(slice) get_owner() method_id {
+        var (owner_address, _, _) = parse_data(get_data());
+            return owner_address;
+}
+
+;; get_release_timestamp(): Returns the release timestamp
+(int) get_release_timestamp() method_id {
+        var (_, release_timestamp, _) = parse_data(get_data());
+            return release_timestamp;
+}
+
+;; get_is_released(): Returns the released flag
+(int) get_is_released() method_id {
+        var (_, _, is_released) = parse_data(get_data());
+            return is_released;
+}
