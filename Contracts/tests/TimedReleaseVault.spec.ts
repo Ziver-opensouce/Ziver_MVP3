@@ -1,32 +1,32 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { Cell, toNano } from '@ton/core';
-import { TimedReeaseVault } from '../wrappers/TimedReeaseVault';
+import { TimedReleaseVault } from '../wrappers/TimedReleaseVault';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 
-describe('TimedReeaseVault', () => {
+describe('TimedReleaseVault', () => {
     let code: Cell;
 
     beforeAll(async () => {
-        code = await compile('TimedReeaseVault');
+        code = await compile('TimedReleaseVault');
     });
 
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let timedReeaseVault: SandboxContract<TimedReeaseVault>;
+    let timedReleaseVault: SandboxContract<TimedReeaseVault>;
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
 
-        timedReeaseVault = blockchain.openContract(TimedReeaseVault.createFromConfig({}, code));
+        timedReleaseVault = blockchain.openContract(TimedReleaseVault.createFromConfig({}, code));
 
         deployer = await blockchain.treasury('deployer');
 
-        const deployResult = await timedReeaseVault.sendDeploy(deployer.getSender(), toNano('0.05'));
+        const deployResult = await timedReleaseVault.sendDeploy(deployer.getSender(), toNano('0.05'));
 
         expect(deployResult.transactions).toHaveTransaction({
             from: deployer.address,
-            to: timedReeaseVault.address,
+            to: timedReleaseVault.address,
             deploy: true,
             success: true,
         });
@@ -34,6 +34,6 @@ describe('TimedReeaseVault', () => {
 
     it('should deploy', async () => {
         // the check is done inside beforeEach
-        // blockchain and timedReeaseVault are ready to use
+        // blockchain and timedReleaseVault are ready to use
     });
 });
