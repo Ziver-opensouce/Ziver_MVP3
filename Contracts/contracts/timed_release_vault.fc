@@ -20,7 +20,7 @@
 ;; parse_data() decodes the contract's data cell
 ;; Returns (owner_address_slice, release_timestamp, is_released)
 (slice, int, int) parse_data() inline {
-    slice ds = get_c4(); ;; get_c4() loads the contract's data cell as a slice
+    slice ds = get_data(); ;; CORRECTED: Use get_data() instead of get_c4()
     throw_if(101, ds.slice_empty?()); ;; Ensure data exists
     var owner_address = ds~load_msg_addr();
     var release_timestamp = ds~load_uint(64);
@@ -40,13 +40,19 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
 ;; --- Internal Message Handler ---
 (int) recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg) impure {
     slice cs = in_msg; ;; Message body slice
-    int flags = in_msg_full.in_msg_full_get_mode(); ;; Get message mode for flags
-    slice sender_address = in_msg_full.in_msg_full_get_sender_address(); ;; Get sender address
+
+    ;; Parse the full incoming message to extract header information
+    slice in_msg_full_slice = in_msg_full.begin_parse(); ;; Convert full message cell to slice
+    in_msg_full_slice~load_uint(1); ;; Skip int_msg_info$0 tag (1 bit)
+    in_msg_full_slice~load_bool(); ;; Skip ihr_disabled (1 bit)
+    in_msg_full_slice~load_bool(); ;; Skip bounce (1 bit)
+    in_msg_full_slice~load_bool(); ;; Skip bounced (1 bit)
+    slice sender_address = in_msg_full_slice~load_msg_addr(); ;; Load source address
 
     ;; Load current contract data. If data is empty, this is the first deployment/initialization.
     var (owner_address, release_timestamp, is_released) = null(); ;; Initialize with null values
 
-    if (get_c4().slice_empty?()) {
+    if (get_data().slice_empty?()) { ;; CORRECTED: Use get_data() instead of get_c4()
         ;; Initial deployment / First message to an uninitialized contract
         ;; For this MVP, we'll assume the deployer is the owner and this message sets the initial state.
         ;; In a real app, you'd send an explicit 'init' message after deployment.
@@ -64,7 +70,7 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
         owner_address = sender_address; ;; Deployer becomes the owner
         is_released = 0; ;; Not yet released
 
-        set_c4(store_data(owner_address, release_timestamp, is_released));
+        set_data(store_data(owner_address, release_timestamp, is_released)); ;; CORRECTED: Use set_data() instead of set_c4()
         return 0;
     } else {
         ;; Contract is already initialized, load existing data
@@ -84,7 +90,7 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
 
     ;; Handle release message
     if (op == op::release) {
-        throw_unless(77, sender_address.equal_slice(owner_address)); ;; Only owner can send release message
+        throw_unless(77, equal_slices_bits(sender_address, owner_address)); ;; CORRECTED: Use equal_slices_bits()
         throw_unless(78, is_released == 0); ;; Funds not yet released
         throw_unless(79, now() >= release_timestamp); ;; Time must have passed (now() is current block timestamp)
 
@@ -102,7 +108,7 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
         );
 
         ;; Update contract data to mark as released
-        set_c4(store_data(owner_address, release_timestamp, 1));
+        set_data(store_data(owner_address, release_timestamp, 1)); ;; CORRECTED: Use set_data()
         return 0;
     }
 
