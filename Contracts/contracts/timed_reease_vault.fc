@@ -7,7 +7,7 @@
 ;; Usually, op-codes are defined in a separate file, or in std.fc for common ones.
 ;; If Blueprint generated an 'op-codes.fc' in your 'contracts/' folder, make sure it's there.
 ;; If not, we define them here. Let's assume you might have one, or define them locally for now.
-#include "op-codes.fc"; ;; Assumes Blueprint's template includes this. If not, remove and define consts locally.
+#include "imports/op-codes.fc"; ;; Assumes Blueprint's template includes this. If not, remove and define consts locally.
 
 ;; --- Storage Layout ---
 ;; Contract data will store:
