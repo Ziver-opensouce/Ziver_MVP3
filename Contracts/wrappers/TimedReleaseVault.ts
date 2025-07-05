@@ -1,22 +1,22 @@
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
 
-export type TimedReeaseVaultConfig = {};
+export type TimedReleaseVaultConfig = {};
 
-export function timedReeaseVaultConfigToCell(config: TimedReeaseVaultConfig): Cell {
+export function timedReleaseVaultConfigToCell(config: TimedReleaseVaultConfig): Cell {
     return beginCell().endCell();
 }
 
-export class TimedReeaseVault implements Contract {
+export class TimedReleaseVault implements Contract {
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
     static createFromAddress(address: Address) {
-        return new TimedReeaseVault(address);
+        return new TimedReleaseVault(address);
     }
 
-    static createFromConfig(config: TimedReeaseVaultConfig, code: Cell, workchain = 0) {
-        const data = timedReeaseVaultConfigToCell(config);
+    static createFromConfig(config: TimedReleaseVaultConfig, code: Cell, workchain = 0) {
+        const data = timedReleaseVaultConfigToCell(config);
         const init = { code, data };
-        return new TimedReeaseVault(contractAddress(workchain, init), init);
+        return new TimedReleaseVault(contractAddress(workchain, init), init);
     }
 
     async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
