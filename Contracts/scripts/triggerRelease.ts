@@ -7,7 +7,7 @@ const RELEASE_OPCODE = 0x4f728c77; // Ensure this matches op::release in your Fu
 
 export async function run(provider: NetworkProvider) {
     // IMPORTANT: Replace with your deployed contract's address
-    const contractAddress = Address.parse('YOUR_DEPLOYED_CONTRACT_ADDRESS_HERE');
+    const contractAddress = Address.parse('kQC-HBo6L7ohnbnpIylrF0kB7INGLqeJ-TV3apC5dVjhkPSQ');
     const timedReleaseVault = provider.open(TimedReleaseVault.createFromAddress(contractAddress));
 
     console.log(`Attempting to trigger release for contract: ${contractAddress}`);
