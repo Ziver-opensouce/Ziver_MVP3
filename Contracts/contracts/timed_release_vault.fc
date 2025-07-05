@@ -53,7 +53,7 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
     ;; Load current contract data. If data is empty, this is the first deployment/initialization.
     var (owner_address, release_timestamp, is_released) = null(); ;; Initialize with null values
 
-    if (get_data().slice_empty?()) { ;; CORRECTED: Use get_data() instead of get_c4()
+        if (get_data().begin_parse().slice_empty?()) { ;; CORRECTED: Use get_data() instead of get_c4()
         ;; Initial deployment / First message to an uninitialized contract
         ;; For this MVP, we'll assume the deployer is the owner and this message sets the initial state.
         ;; In a real app, you'd send an explicit 'init' message after deployment.
