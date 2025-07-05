@@ -19,25 +19,37 @@ export class TimedReleaseVault implements Contract {
         return new TimedReleaseVault(contractAddress(workchain, init), init);
     }
 
-    // Modified sendDeploy to accept an optional 'body' argument
     async sendDeploy(provider: ContractProvider, via: Sender, value: bigint, body: Cell | null = null) {
         await provider.internal(via, {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: body || beginCell().endCell(), // Use the provided body, or an empty one if not provided
+            body: body || beginCell().endCell(),
         });
     }
 
-    // RECOMMENDED: Add a method to fetch contract data for testing purposes
-    // This will allow you to assert the contract's state in your tests.
-    async getContractData(provider: ContractProvider) {
-        const { stack } = await provider.get('get_contract_data', []); // Assuming get_contract_data is a get-method
-        // You'll need to adapt this parsing based on how your parse_data() in FunC works and what get_contract_data returns
-        // Example: if get_contract_data returns owner_address, release_timestamp, is_released
+    // Updated: More precise type for release_timestamp (bigint)
+    async getContractData(provider: ContractProvider): Promise<{ owner_address: Address, release_timestamp: bigint, is_released: number }> {
+        const { stack } = await provider.get('get_contract_data', []);
         return {
             owner_address: stack.readAddress(),
-            release_timestamp: stack.readNumber(),
+            release_timestamp: stack.readBigNumber(), // Use readBigNumber for 64-bit uint
             is_released: stack.readNumber(),
         };
+    }
+
+    // Optional: Add individual getter methods for clarity
+    async getOwner(provider: ContractProvider): Promise<Address> {
+        const { stack } = await provider.get('get_owner', []);
+        return stack.readAddress();
+    }
+
+    async getReleaseTimestamp(provider: ContractProvider): Promise<bigint> {
+        const { stack } = await provider.get('get_release_timestamp', []);
+        return stack.readBigNumber();
+    }
+
+    async getIsReleased(provider: ContractProvider): Promise<number> {
+        const { stack } = await provider.get('get_is_released', []);
+        return stack.readNumber();
     }
 }
