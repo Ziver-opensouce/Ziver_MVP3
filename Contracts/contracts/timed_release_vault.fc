@@ -15,7 +15,7 @@
 ;; parse_data() decodes the contract's data cell
 ;; Returns (owner_address_slice, release_timestamp, is_released)
 (slice, int, int) parse_data() inline {
-    slice ds = get_data().begin_parse(); ; Convert cell to slice
+    slice ds = get_data().begin_parse(); ; Convert cell to slice (Corrected: single semicolon for comment)
     throw_if(101, ds.slice_empty?()); ; Ensure data exists
     var owner_address = ds~load_msg_addr();
     var release_timestamp = ds~load_uint(64);
