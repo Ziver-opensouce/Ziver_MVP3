@@ -4,9 +4,6 @@
 #include "imports/stdlib.fc";
 #include "imports/op-codes.fc";
 
-;; Define op-codes if they are not in imports/op-codes.fc
-;; These are common default opcodes for Blueprint, if your template didn't generate them:
-
 ;; --- Storage Layout ---
 ;; Contract data will store:
 ;; 1. owner_address: MsgAddress - The address allowed to release funds.
@@ -18,11 +15,11 @@
 ;; parse_data() decodes the contract's data cell
 ;; Returns (owner_address_slice, release_timestamp, is_released)
 (slice, int, int) parse_data() inline {
-    slice ds = get_data().begin_parse(); ;; CORRECTED: Convert cell to slice
-    throw_if(101, ds.slice_empty?()); ;; Ensure data exists
+    slice ds = get_data().begin_parse(); ; Convert cell to slice
+    throw_if(101, ds.slice_empty?()); ; Ensure data exists
     var owner_address = ds~load_msg_addr();
     var release_timestamp = ds~load_uint(64);
-    var is_released = ds~load_int(1); ;; 1 bit for boolean
+    var is_released = ds~load_int(1); ; 1 bit for boolean
     return (owner_address, release_timestamp, is_released);
 }
 
@@ -37,100 +34,103 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
 
 ;; --- Internal Message Handler ---
 (int) recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg) impure {
-    slice cs = in_msg; // Message body slice
+    slice cs = in_msg; ; Message body slice (Corrected comment syntax)
 
     ;; Parse the full incoming message to extract sender address
     slice in_msg_full_slice = in_msg_full.begin_parse();
-    in_msg_full_slice~load_uint(1); // Skip int_msg_info$0 tag (1 bit)
-    in_msg_full_slice~load_bool();  // Skip ihr_disabled (1 bit)
-    in_msg_full_slice~load_bool();  // Skip bounce (1 bit)
-    in_msg_full_slice~load_bool();  // Skip bounced (1 bit)
-    slice sender_address = in_msg_full_slice~load_msg_addr(); // Load source address
+    in_msg_full_slice~load_uint(1); ; Skip int_msg_info$0 tag (1 bit)
+    in_msg_full_slice~load_bool(); ; Skip ihr_disabled (1 bit)
+    in_msg_full_slice~load_bool(); ; Skip bounce (1 bit)
+    in_msg_full_slice~load_bool(); ; Skip bounced (1 bit)
+    slice sender_address = in_msg_full_slice~load_msg_addr(); ; Load source address
 
     ;; Load current contract data.
     var (owner_address, release_timestamp, is_released) = null();
 
     if (get_data().begin_parse().slice_empty?()) {
         ;; Initial deployment / First message to an uninitialized contract
-        throw_unless(102, cs.slice_bits() >= (32 + 64)); // Ensure enough bits for opcode and timestamp
+        throw_unless(102, cs.slice_bits() >= (32 + 64)); ; Ensure enough bits for opcode and timestamp
 
         int op = cs~load_uint(32);
-        throw_unless(103, op == 1); // Simple init opcode = 1 for first message
+        throw_unless(103, op == 1); ; Simple init opcode = 1 for first message
 
         release_timestamp = cs~load_uint(64);
-        owner_address = sender_address; // Deployer becomes the owner
-        is_released = 0; // Not yet released
+        owner_address = sender_address; ; Deployer becomes the owner
+        is_released = 0; ; Not yet released
 
         set_data(store_data(owner_address, release_timestamp, is_released));
-        return 0; // Successfully initialized
+        return 0; ; Successfully initialized
     } else {
         ;; Contract is already initialized, load existing data
         (owner_address, release_timestamp, is_released) = parse_data();
     }
 
     ;; Determine opcode if present, otherwise assume simple transfer
-    int op = 0; // Default to 0, implying no explicit opcode
-    if (cs.slice_bits() >= 32) { // Only try to load opcode if there are enough bits
+    int op = 0; ; Default to 0, implying no explicit opcode
+    if (cs.slice_bits() >= 32) { ; Only try to load opcode if there are enough bits
         op = cs~load_uint(32);
     }
 
     ;; --- Handle Deposit ---
     ;; If the message has no opcode, or a specific deposit opcode, just accept funds
     ;; This allows any simple transfer to increase the contract's balance
-    if (op == 0 || op == op::deposit) { // 0 for simple transfer, or explicit op::deposit
+    if (op == 0 || op == op::deposit) { ; 0 for simple transfer, or explicit op::deposit
         ;; Funds are automatically added to my_balance
         ;; No specific logic needed here other than just accepting the message.
         ;; Contract simply holds the balance.
-        return 0; // Successfully processed as a deposit
+        return 0; ; Successfully processed as a deposit
     }
 
     ;; --- Handle Release Message ---
     if (op == op::release) {
-        throw_unless(77, equal_slices_bits(sender_address, owner_address)); // Only owner can trigger release
-        throw_unless(78, is_released == 0); // Funds not yet released
-        throw_unless(79, now() >= release_timestamp); // Time must have passed (now() is current block timestamp)
+        throw_unless(77, equal_slices_bits(sender_address, owner_address)); ; Only owner can trigger release
+        throw_unless(78, is_released == 0); ; Funds not yet released
+        throw_unless(79, now() >= release_timestamp); ; Time must have passed (now() is current block timestamp)
 
         ;; Send all contract balance back to owner, excluding minimal fees
         ;; mode 128 (0x80): tells it to send remaining value after fees.
         ;; mode 2 (0x02): tells it to ignore message body if any (recommended for simple value transfer)
         send_raw_message(
             begin_cell()
-                .store_uint(0x18, 6) // int_msg_info$100000 (standard internal message header)
-                .store_slice(owner_address) // destination address
-                .store_coins(0) // send 0 coins here, mode 128 will send all
-                .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) // common fields for outgoing message (e.g., bounce, flags, etc.)
+                .store_uint(0x18, 6) ; int_msg_info$100000 (standard internal message header)
+                .store_slice(owner_address) ; destination address
+                .store_coins(0) ; send 0 coins here, mode 128 will send all
+                .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ; common fields for outgoing message (e.g., bounce, flags, etc.)
                 .end_cell(),
-            128 + 2 // mode 128: send all remaining balance, +2: ignore body
+            128 + 2 ; mode 128: send all remaining balance, +2: ignore body
         );
 
         ;; Update contract data to mark as released
         set_data(store_data(owner_address, release_timestamp, 1));
-        return 0; // Successfully released
+        return 0; ; Successfully released
     }
 
     ;; If we reach here, it's an unhandled or unexpected opcode.
-    throw(0xffff); // Throw generic error for unhandled opcode (will bounce)
+    throw(0xffff); ; Throw generic error for unhandled opcode (will bounce)
     return 0;
 }
 
 ;; --- Get Methods (Public read-only functions) ---
 
-;; (No changes to get methods)
+;; get_owner(): Returns the owner address
 (slice) get_owner() method_id {
     var (owner_address, _, _) = parse_data();
     return owner_address;
 }
 
+;; get_release_timestamp(): Returns the release timestamp
 (int) get_release_timestamp() method_id {
     var (_, release_timestamp, _) = parse_data();
     return release_timestamp;
 }
 
+;; get_is_released(): Returns the released flag
 (int) get_is_released() method_id {
     var (_, _, is_released) = parse_data();
     return is_released;
 }
 
+;; get_contract_data(): Returns all contract data
 (slice, int, int) get_contract_data() method_id {
     return parse_data();
 }
