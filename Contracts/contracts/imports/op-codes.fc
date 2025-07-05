@@ -1,0 +1,10 @@
+;; contracts/imports/op-codes.fc
+;; Standard op-codes for your contract
+
+;; Basic op-codes for TimedReleaseVault
+const op::deposit = 0x1234;   ;; Example opcode for deposit. Choose a unique one.
+const op::release = 0x5678;   ;; Example opcode for release. Choose a unique one.
+
+;; You might also include other common op-codes if your project uses them
+;; For example, for an "init" message if you want a dedicated one, though your current code uses 0x1.
+;; const op::init = 1;
