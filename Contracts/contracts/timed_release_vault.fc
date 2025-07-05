@@ -15,7 +15,7 @@
 ;; parse_data() decodes the contract's data cell
 ;; Returns (owner_address_slice, release_timestamp, is_released)
 (slice, int, int) parse_data() inline {
-    slice ds = get_data().begin_parse(); ; Convert cell to slice (Corrected: single semicolon for comment)
+    slice ds = get_data().begin_parse(); ; Convert cell to slice
     throw_if(101, ds.slice_empty?()); ; Ensure data exists
     var owner_address = ds~load_msg_addr();
     var release_timestamp = ds~load_uint(64);
@@ -34,7 +34,7 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
 
 ;; --- Internal Message Handler ---
 (int) recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg) impure {
-    slice cs = in_msg; ; Message body slice (Corrected comment syntax)
+    slice cs = in_msg; ; Message body slice
 
     ;; Parse the full incoming message to extract sender address
     slice in_msg_full_slice = in_msg_full.begin_parse();
