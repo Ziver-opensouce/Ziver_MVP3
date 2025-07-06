@@ -28,7 +28,8 @@ export type TaskDetails = {
     taskPosterAddress: Address;
     paymentPerPerformerAmount: bigint; // In nanotoncoins
     numberOfPerformersNeeded: bigint;
-    performersCompleted: Cell; // Dictionary (HashMap) of Address -> Boolean/Status (Cell for FunC dict)
+    performersCompleted: Dictionary<bigint, Cell>; // Dictionary for completed performers
+    completedPerformersCount: bigint; // <-- ADD THIS LINE HERE
     taskDescriptionHash: bigint; // Hash of off-chain description (e.g., SHA256 of IPFS CID)
     taskGoalHash: bigint; // Hash of off-chain goal criteria (e.g., SHA256)
     expiryTimestamp: bigint; // Unix timestamp
@@ -36,7 +37,7 @@ export type TaskDetails = {
     ziverFeePercentage: bigint; // e.g., 6 for 6% (stored as 6, actual division in FunC)
     moderatorAddress: Address; // Address authorized to verify/resolve disputes
     currentState: EscrowState; // Current state of this specific task
-    proofSubmissionMap: Cell; // Dictionary (HashMap) of Address -> ProofHash (Cell for FunC dict)
+    proofSubmissionMap: Dictionary<bigint, Cell>; // Dictionary to store performer proof hashes
 };
 
 // Define the contract's overall data structure
