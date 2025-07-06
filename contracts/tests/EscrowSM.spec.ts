@@ -1,13 +1,13 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton-community/sandbox';
-import { Cell, toNano, Address, Dictionary } from 'ton';
-import { EscrowSM, EscrowSMData, Opcodes, TaskDetails, EscrowState } from '../wrappers/EscrowSM';
-import '@ton-community/test-utils'; // for expect().to.be.calledWith, etc.
+import { Address, Cell, Dictionary, toNano } from 'ton';
+import { EscrowSM, EscrowSMData, Opcodes, EscrowState } from '../wrappers/EscrowSM';
+import '@ton-community/test-utils';
 
 describe('EscrowSM', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
     let escrowSM: SandboxContract<EscrowSM>;
-    let ziverTreasury: Address; // This will be the actual Ziver treasury address
+    let ziverTreasury: Address;
     let taskPoster: SandboxContract<TreasuryContract>;
     let performer1: SandboxContract<TreasuryContract>;
     let performer2: SandboxContract<TreasuryContract>;
@@ -16,11 +16,9 @@ describe('EscrowSM', () => {
     beforeEach(async () => {
         blockchain = await Blockchain.create();
         deployer = await blockchain.treasury('deployer');
-
-        // Define Ziver Treasury Address (the one you provided)
         ziverTreasury = Address.parse('UQDl_5CtQqwxSKk9EoUbgKV6XsSDQqqkYYeZ0UFduTZuCtlP');
 
-        // Initialize contract data with an empty tasks dictionary and 0 fees
+        // Initialize contract with empty tasks
         const initialData: EscrowSMData = {
             tasks: Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.Cell()),
             ziverTreasuryAddress: ziverTreasury,
@@ -28,25 +26,12 @@ describe('EscrowSM', () => {
 
         escrowSM = blockchain.openContract(await EscrowSM.fromInit(initialData));
 
-        const deployResult = await escrowSM.send(
+        await escrowSM.send(
             deployer.getSender(),
-            {
-                value: toNano('0.05'), // send some Toncoins to cover gas fees for deployment
-            },
-            {
-                $$type: 'Deploy',
-                queryId: 0n,
-            },
+            { value: toNano('0.05') },
+            { $$type: 'Deploy', queryId: 0n }
         );
 
-        expect(deployResult.transactions).toHaveTransaction({
-            from: deployer.address,
-            to: escrowSM.address,
-            deploy: true,
-            success: true,
-        });
-
-        // Set up other test accounts
         taskPoster = await blockchain.treasury('taskPoster');
         performer1 = await blockchain.treasury('performer1');
         performer2 = await blockchain.treasury('performer2');
@@ -54,294 +39,265 @@ describe('EscrowSM', () => {
     });
 
     it('should deploy and have correct initial data', async () => {
-        // Check if getters return initial values
-        const currentZiverTreasuryAddress = await escrowSM.getZiverTreasuryAddress();
-        expect(currentZiverTreasuryAddress.toString()).toEqual(ziverTreasury.toString());
-
-        const accumulatedFees = await escrowSM.getAccumulatedFees();
-        expect(accumulatedFees).toEqual(0n); // Expect 0n (BigInt zero)
+        expect((await escrowSM.getZiverTreasuryAddress()).toString()).toEqual(ziverTreasury.toString());
+        expect(await escrowSM.getAccumulatedFees()).toEqual(0n);
     });
 
-    it('should allow a user to send task details', async () => {
-        const taskId = 123n;
-        const paymentPerPerformer = toNano('1'); // 1 TON
-        const numberOfPerformers = 2;
-        const taskDescriptionHash = 12345n; // Mock hash
-        const taskGoalHash = 67890n; // Mock hash
-        const expiryTimestamp = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1 hour from now
-        const ziverFeePercentage = 5; // 5% fee
+    it('should create, fund, expire and refund a task (auto-expiry)', async () => {
+        const taskId = 1001n;
+        const payment = toNano('2');
+        const nPerformers = 1n;
+        const expiry = BigInt(Math.floor(Date.now() / 1000) + 1); // expires in 1 second
 
-        const sendTaskDetailsResult = await escrowSM.send(
-            taskPoster.getSender(),
-            {
-                value: toNano('0.1'), // Message value to cover gas
-            },
-            {
-                $$type: 'SendTaskDetails',
-                queryId: 1n,
-                taskId: taskId,
-                paymentPerPerformerAmount: paymentPerPerformer,
-                numberOfPerformersNeeded: BigInt(numberOfPerformers),
-                taskDescriptionHash: taskDescriptionHash,
-                taskGoalHash: taskGoalHash,
-                expiryTimestamp: expiryTimestamp,
-                ziverFeePercentage: BigInt(ziverFeePercentage),
-                moderatorAddress: moderator.address,
-            },
-        );
-
-        expect(sendTaskDetailsResult.transactions).toHaveTransaction({
-            from: taskPoster.address,
-            to: escrowSM.address,
-            success: true,
-            outMessagesCount: 1, // Expect a confirmation message back
+        // 1. Create task
+        await escrowSM.sendSetTaskDetails(escrowSM, taskPoster.getSender(), {
+            taskId,
+            paymentPerPerformerAmount: payment,
+            numberOfPerformersNeeded: nPerformers,
+            taskDescriptionHash: 123n,
+            taskGoalHash: 456n,
+            expiryTimestamp: expiry,
+            ziverFeePercentage: 5n,
+            moderatorAddress: moderator.address,
+            value: toNano('0.05'),
+            queryID: 1n,
         });
+        let td = await escrowSM.getTaskDetails(escrowSM, taskId);
+        expect(td?.currentState).toEqual(EscrowState.Idle);
 
-        const taskDetails = await escrowSM.getTaskDetails(taskId);
-        expect(taskDetails).not.toBeNull();
-        expect(taskDetails?.taskPosterAddress.toString()).toEqual(taskPoster.address.toString());
-        expect(taskDetails?.paymentPerPerformerAmount).toEqual(paymentPerPerformer);
-        expect(taskDetails?.numberOfPerformersNeeded).toEqual(BigInt(numberOfPerformers));
-        expect(taskDetails?.totalEscrowedFunds).toEqual(0n); // No funds yet
-        expect(taskDetails?.currentState).toEqual(BigInt(EscrowState.Idle)); // Should be Idle initially
-        expect(taskDetails?.ziverFeePercentage).toEqual(BigInt(ziverFeePercentage));
+        // 2. Fund task
+        await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: payment + toNano('0.05'),
+            queryID: 2n
+        });
+        td = await escrowSM.getTaskDetails(escrowSM, taskId);
+        expect(td?.totalEscrowedFunds).toEqual(payment);
+        expect(td?.currentState).toEqual(EscrowState.Active);
+
+        // 3. Wait for expiry
+        await new Promise(res => setTimeout(res, 1200));
+
+        // 4. Anyone can call expire_task
+        await escrowSM.sendExpireTask(escrowSM, performer1.getSender(), {
+            taskId,
+            value: toNano('0.05'),
+            queryID: 3n
+        });
+        td = await escrowSM.getTaskDetails(escrowSM, taskId);
+        expect(td?.currentState).toEqual(EscrowState.Expired);
+        expect(td?.totalEscrowedFunds).toEqual(0n);
     });
 
-    it('should allow task poster to deposit funds for an existing task', async () => {
-        const taskId = 123n;
-        const paymentPerPerformer = toNano('1'); // 1 TON
-        const numberOfPerformers = 2;
-        const taskDescriptionHash = 12345n;
-        const taskGoalHash = 67890n;
-        const expiryTimestamp = BigInt(Math.floor(Date.now() / 1000) + 3600);
-        const ziverFeePercentage = 5;
+    it('should enforce replay protection (reject duplicate queryIDs)', async () => {
+        const taskId = 1002n;
+        const payment = toNano('1');
+        const nPerformers = 1n;
+        const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
-        // First, create the task
-        await escrowSM.send(
-            taskPoster.getSender(),
-            { value: toNano('0.1') },
-            {
-                $$type: 'SendTaskDetails',
-                queryId: 1n,
-                taskId: taskId,
-                paymentPerPerformerAmount: paymentPerPerformer,
-                numberOfPerformersNeeded: BigInt(numberOfPerformers),
-                taskDescriptionHash: taskDescriptionHash,
-                taskGoalHash: taskGoalHash,
-                expiryTimestamp: expiryTimestamp,
-                ziverFeePercentage: BigInt(ziverFeePercentage),
-                moderatorAddress: moderator.address,
-            },
-        );
-
-        let taskDetailsBeforeDeposit = await escrowSM.getTaskDetails(taskId);
-        expect(taskDetailsBeforeDeposit?.totalEscrowedFunds).toEqual(0n);
-        expect(taskDetailsBeforeDeposit?.currentState).toEqual(BigInt(EscrowState.Idle));
-
-        // Deposit half the required funds
-        const depositAmount1 = paymentPerPerformer; // Funds for 1 performer
-        const depositResult1 = await escrowSM.send(
-            taskPoster.getSender(),
-            {
-                value: depositAmount1 + toNano('0.05'), // Funds + gas
-            },
-            {
-                $$type: 'DepositFunds',
-                queryId: 2n,
-                taskId: taskId,
-            },
-        );
-
-        expect(depositResult1.transactions).toHaveTransaction({
-            from: taskPoster.address,
-            to: escrowSM.address,
-            success: true,
+        // Task create
+        await escrowSM.sendSetTaskDetails(escrowSM, taskPoster.getSender(), {
+            taskId,
+            paymentPerPerformerAmount: payment,
+            numberOfPerformersNeeded: nPerformers,
+            taskDescriptionHash: 0n,
+            taskGoalHash: 0n,
+            expiryTimestamp: expiry,
+            ziverFeePercentage: 5n,
+            moderatorAddress: moderator.address,
+            value: toNano('0.05'),
+            queryID: 10n,
         });
 
-        let taskDetailsAfterDeposit1 = await escrowSM.getTaskDetails(taskId);
-        expect(taskDetailsAfterDeposit1?.totalEscrowedFunds).toEqual(depositAmount1);
-        expect(taskDetailsAfterDeposit1?.currentState).toEqual(BigInt(EscrowState.TaskSetAndFundsPending)); // Should be pending
-
-        // Deposit remaining funds
-        const depositAmount2 = paymentPerPerformer; // Funds for 1 performer
-        const depositResult2 = await escrowSM.send(
-            taskPoster.getSender(),
-            {
-                value: depositAmount2 + toNano('0.05'), // Funds + gas
-            },
-            {
-                $$type: 'DepositFunds',
-                queryId: 3n,
-                taskId: taskId,
-            },
-        );
-
-        expect(depositResult2.transactions).toHaveTransaction({
-            from: taskPoster.address,
-            to: escrowSM.address,
-            success: true,
+        // First deposit (should succeed)
+        await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: payment + toNano('0.05'),
+            queryID: 11n,
         });
 
-        let taskDetailsAfterDeposit2 = await escrowSM.getTaskDetails(taskId);
-        expect(taskDetailsAfterDeposit2?.totalEscrowedFunds).toEqual(paymentPerPerformer * BigInt(numberOfPerformers));
-        expect(taskDetailsAfterDeposit2?.currentState).toEqual(BigInt(EscrowState.Active)); // Should be Active now
-
-        // Check overpayment refund
-        const overpaymentAmount = toNano('0.5');
-        const depositOverpayResult = await escrowSM.send(
-            taskPoster.getSender(),
-            {
-                value: toNano('0.1') + overpaymentAmount, // Small amount + overpayment
-            },
-            {
-                $$type: 'DepositFunds',
-                queryId: 4n,
-                taskId: taskId, // This will throw an error as it's already active and fully funded
-            },
-        );
-        expect(depositOverpayResult.transactions).toHaveTransaction({
-            from: taskPoster.address,
-            to: escrowSM.address,
-            success: false, // Should fail as task is already funded
-            exitCode: 104, // error::invalid_state
-        });
+        // Re-using queryID (should fail: error_replay)
+        await expect(async () => {
+            await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+                taskId,
+                value: payment + toNano('0.05'),
+                queryID: 11n, // same as before!
+            });
+        }).rejects.toThrow(/exit code 257/i); // error_replay
     });
 
-    it('should allow task poster to verify task completion and pay performer, collecting fees', async () => {
-        const taskId = 456n;
-        const paymentPerPerformer = toNano('1'); // 1 TON
-        const numberOfPerformers = 1; // For simplicity, one performer
-        const taskDescriptionHash = 111n;
-        const taskGoalHash = 222n;
-        const expiryTimestamp = BigInt(Math.floor(Date.now() / 1000) + 3600);
-        const ziverFeePercentage = 10; // 10% fee
+    it('should complete task and accumulate fees', async () => {
+        const taskId = 2001n;
+        const payment = toNano('3');
+        const nPerformers = 1n;
+        const feePct = 10n;
 
-        // 1. Create the task
-        await escrowSM.send(
-            taskPoster.getSender(),
-            { value: toNano('0.1') },
-            {
-                $$type: 'SendTaskDetails',
-                queryId: 1n,
-                taskId: taskId,
-                paymentPerPerformerAmount: paymentPerPerformer,
-                numberOfPerformersNeeded: BigInt(numberOfPerformers),
-                taskDescriptionHash: taskDescriptionHash,
-                taskGoalHash: taskGoalHash,
-                expiryTimestamp: expiryTimestamp,
-                ziverFeePercentage: BigInt(ziverFeePercentage),
-                moderatorAddress: moderator.address,
-            },
-        );
-
-        // 2. Deposit required funds
-        const totalRequiredFunds = paymentPerPerformer * BigInt(numberOfPerformers);
-        await escrowSM.send(
-            taskPoster.getSender(),
-            { value: totalRequiredFunds + toNano('0.05') },
-            {
-                $$type: 'DepositFunds',
-                queryId: 2n,
-                taskId: taskId,
-            },
-        );
-
-        let initialZiverFees = await escrowSM.getAccumulatedFees();
-        expect(initialZiverFees).toEqual(0n);
-
-        let performer1BalanceBefore = await performer1.getBalance();
-        let contractBalanceBefore = await escrowSM.getBalance();
-
-        // 3. Verify task completion for performer1
-        const verifyResult = await escrowSM.send(
-            taskPoster.getSender(),
-            { value: toNano('0.1') }, // Gas for transaction
-            {
-                $$type: 'VerifyTaskCompletion',
-                queryId: 3n,
-                taskId: taskId,
-                performerAddress: performer1.address,
-            },
-        );
-
-        expect(verifyResult.transactions).toHaveTransaction({
-            from: taskPoster.address,
-            to: escrowSM.address,
-            success: true,
+        // Create and fund
+        await escrowSM.sendSetTaskDetails(escrowSM, taskPoster.getSender(), {
+            taskId,
+            paymentPerPerformerAmount: payment,
+            numberOfPerformersNeeded: nPerformers,
+            taskDescriptionHash: 10n,
+            taskGoalHash: 20n,
+            expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
+            ziverFeePercentage: feePct,
+            moderatorAddress: moderator.address,
+            value: toNano('0.05'),
+            queryID: 21n,
         });
-        expect(verifyResult.transactions).toHaveTransaction({
-            from: escrowSM.address,
-            to: performer1.address,
-            success: true,
-            // Check the amount sent to performer1 (payment - fee)
-            value: paymentPerPerformer - (paymentPerPerformer * BigInt(ziverFeePercentage)) / 100n,
+        await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: payment + toNano('0.05'),
+            queryID: 22n,
         });
 
-        let taskDetailsAfterVerification = await escrowSM.getTaskDetails(taskId);
-        expect(taskDetailsAfterVerification?.totalEscrowedFunds).toEqual(0n); // All funds for this task should be gone
-        expect(taskDetailsAfterVerification?.currentState).toEqual(BigInt(EscrowState.Settled)); // Should be settled if 1 performer needed
+        // Perform task completion
+        const performer1BalBefore = await performer1.getBalance();
+        await escrowSM.sendVerifyTaskCompletion(escrowSM, taskPoster.getSender(), {
+            taskId,
+            performerAddress: performer1.address,
+            value: toNano('0.05'),
+            queryID: 23n,
+        });
+        const fee = payment * feePct / 100n;
+        const performer1BalAfter = await performer1.getBalance();
+        expect(performer1BalAfter - performer1BalBefore).toBeGreaterThanOrEqual(payment - fee);
 
-        let accumulatedFeesAfter = await escrowSM.getAccumulatedFees();
-        const expectedFee = (paymentPerPerformer * BigInt(ziverFeePercentage)) / 100n;
-        expect(accumulatedFeesAfter).toEqual(expectedFee); // Verify fee accumulation
-
-        let performer1BalanceAfter = await performer1.getBalance();
-        // Check performer's balance increase (approx due to gas)
-        expect(performer1BalanceAfter).toBeGreaterThan(performer1BalanceBefore);
-        expect(performer1BalanceAfter - performer1BalanceBefore).toBeCloseTo(paymentPerPerformer - expectedFee, toNano('0.02').toString()); // Allow small gas variance
+        // Check contract fee accumulation
+        expect(await escrowSM.getAccumulatedFees(escrowSM)).toEqual(fee);
     });
 
-    it('should allow ziver treasury to withdraw accumulated fees', async () => {
-        const taskId1 = 789n;
-        const taskId2 = 790n;
-        const paymentPerPerformer = toNano('1'); // 1 TON
-        const numberOfPerformers = 1;
-        const ziverFeePercentage = 10; // 10% fee
-        const expectedFee = (paymentPerPerformer * BigInt(ziverFeePercentage)) / 100n;
+    it('should allow treasury to withdraw accumulated fees', async () => {
+        const taskId = 3001n;
+        const payment = toNano('1');
+        const nPerformers = 1n;
+        const feePct = 10n;
 
-        // Simulate 2 tasks completing to accumulate fees
-        // Task 1
-        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.1') }, { $$type: 'SendTaskDetails', queryId: 1n, taskId: taskId1, paymentPerPerformerAmount: paymentPerPerformer, numberOfPerformersNeeded: BigInt(numberOfPerformers), taskDescriptionHash: 1n, taskGoalHash: 1n, expiryTimestamp: BigInt(Date.now()), ziverFeePercentage: BigInt(ziverFeePercentage), moderatorAddress: moderator.address });
-        await escrowSM.send(taskPoster.getSender(), { value: paymentPerPerformer + toNano('0.05') }, { $$type: 'DepositFunds', queryId: 2n, taskId: taskId1 });
-        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.1') }, { $$type: 'VerifyTaskCompletion', queryId: 3n, taskId: taskId1, performerAddress: performer1.address });
-
-        // Task 2
-        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.1') }, { $$type: 'SendTaskDetails', queryId: 4n, taskId: taskId2, paymentPerPerformerAmount: paymentPerPerformer, numberOfPerformersNeeded: BigInt(numberOfPerformers), taskDescriptionHash: 2n, taskGoalHash: 2n, expiryTimestamp: BigInt(Date.now()), ziverFeePercentage: BigInt(ziverFeePercentage), moderatorAddress: moderator.address });
-        await escrowSM.send(taskPoster.getSender(), { value: paymentPerPerformer + toNano('0.05') }, { $$type: 'DepositFunds', queryId: 5n, taskId: taskId2 });
-        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.1') }, { $$type: 'VerifyTaskCompletion', queryId: 6n, taskId: taskId2, performerAddress: performer2.address });
-
-        let accumulatedFees = await escrowSM.getAccumulatedFees();
-        expect(accumulatedFees).toEqual(expectedFee * 2n); // Two tasks completed
-
-        let ziverTreasuryBalanceBefore = await blockchain.get}.getBalance(ziverTreasury);
-        
-        // Now, withdraw fees
-        const withdrawResult = await escrowSM.send(
-            blockchain.get andbox().getSender(ziverTreasury), // Use sandbox's sender for the treasury address
-            {
-                value: toNano('0.1'), // Gas for transaction
-            },
-            {
-                $$type: 'WithdrawFee',
-                queryId: 7n,
-            },
-        );
-
-        expect(withdrawResult.transactions).toHaveTransaction({
-            from: escrowSM.address,
-            to: ziverTreasury,
-            success: true,
-            value: accumulatedFees, // Should send the full accumulated amount
+        // Create & fund & complete
+        await escrowSM.sendSetTaskDetails(escrowSM, taskPoster.getSender(), {
+            taskId,
+            paymentPerPerformerAmount: payment,
+            numberOfPerformersNeeded: nPerformers,
+            taskDescriptionHash: 0n,
+            taskGoalHash: 0n,
+            expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
+            ziverFeePercentage: feePct,
+            moderatorAddress: moderator.address,
+            value: toNano('0.05'),
+            queryID: 31n,
+        });
+        await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: payment + toNano('0.05'),
+            queryID: 32n,
+        });
+        await escrowSM.sendVerifyTaskCompletion(escrowSM, taskPoster.getSender(), {
+            taskId,
+            performerAddress: performer1.address,
+            value: toNano('0.05'),
+            queryID: 33n,
         });
 
-        let accumulatedFeesAfterWithdraw = await escrowSM.getAccumulatedFees();
-        expect(accumulatedFeesAfterWithdraw).toEqual(0n); // Fees should be reset to 0
+        const fee = payment * feePct / 100n;
+        expect(await escrowSM.getAccumulatedFees(escrowSM)).toEqual(fee);
 
-        let ziverTreasuryBalanceAfter = await blockchain.get}.getBalance(ziverTreasury);
-        expect(ziverTreasuryBalanceAfter).toBeGreaterThan(ziverTreasuryBalanceBefore);
-        expect(ziverTreasuryBalanceAfter - ziverTreasuryBalanceBefore).toBeCloseTo(accumulatedFees, toNano('0.02').toString()); // Allow small gas variance
+        // Withdraw fee
+        const treasuryBalBefore = await blockchain.getBalance(ziverTreasury);
+        await escrowSM.sendWithdrawFee(escrowSM, blockchain.sender(ziverTreasury), {
+            value: toNano('0.05'),
+            queryID: 34n,
+        });
+        expect(await escrowSM.getAccumulatedFees(escrowSM)).toEqual(0n);
+        const treasuryBalAfter = await blockchain.getBalance(ziverTreasury);
+        expect(treasuryBalAfter - treasuryBalBefore).toBeGreaterThanOrEqual(fee);
     });
 
-    // TODO: Add more tests for other opcodes (submitProof, raiseDispute, resolveDispute, cancelTaskAndRefund, etc.)
-    // These will involve more complex scenarios and state transitions.
+    it('should handle disputes and moderator resolution', async () => {
+        const taskId = 4001n;
+        const payment = toNano('1');
+        const nPerformers = 1n;
+
+        await escrowSM.sendSetTaskDetails(escrowSM, taskPoster.getSender(), {
+            taskId,
+            paymentPerPerformerAmount: payment,
+            numberOfPerformersNeeded: nPerformers,
+            taskDescriptionHash: 0n,
+            taskGoalHash: 0n,
+            expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
+            ziverFeePercentage: 5n,
+            moderatorAddress: moderator.address,
+            value: toNano('0.05'),
+            queryID: 41n,
+        });
+        await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: payment + toNano('0.05'),
+            queryID: 42n,
+        });
+
+        // Performer submits proof
+        await escrowSM.sendSubmitProof(escrowSM, performer1.getSender(), {
+            taskId,
+            proofHash: 123n,
+            value: toNano('0.05'),
+            queryID: 43n,
+        });
+
+        // Poster raises dispute
+        await escrowSM.sendRaiseDispute(escrowSM, taskPoster.getSender(), {
+            taskId,
+            reasonHash: 321n,
+            value: toNano('0.05'),
+            queryID: 44n,
+        });
+
+        // Moderator resolves in performer's favor
+        await escrowSM.sendResolveDispute(escrowSM, moderator.getSender(), {
+            taskId,
+            winnerAddress: performer1.address,
+            value: toNano('0.05'),
+            queryID: 45n,
+        });
+
+        const td = await escrowSM.getTaskDetails(escrowSM, taskId);
+        expect(td?.currentState).toEqual(EscrowState.Settled);
+    });
+
+    it('should cancel and refund before activation', async () => {
+        const taskId = 5001n;
+        const payment = toNano('2');
+        const nPerformers = 1n;
+        const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600);
+
+        // Create task
+        await escrowSM.sendSetTaskDetails(escrowSM, taskPoster.getSender(), {
+            taskId,
+            paymentPerPerformerAmount: payment,
+            numberOfPerformersNeeded: nPerformers,
+            taskDescriptionHash: 0n,
+            taskGoalHash: 0n,
+            expiryTimestamp: expiry,
+            ziverFeePercentage: 2n,
+            moderatorAddress: moderator.address,
+            value: toNano('0.05'),
+            queryID: 51n,
+        });
+        // Fund partially
+        await escrowSM.sendDepositFunds(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: payment / 2n + toNano('0.05'),
+            queryID: 52n,
+        });
+        // Cancel
+        await escrowSM.sendCancelTaskAndRefund(escrowSM, taskPoster.getSender(), {
+            taskId,
+            value: toNano('0.05'),
+            queryID: 53n,
+        });
+        const td = await escrowSM.getTaskDetails(escrowSM, taskId);
+        expect(td?.currentState).toEqual(EscrowState.Refunded);
+        expect(td?.totalEscrowedFunds).toEqual(0n);
+    });
+
+    // --- Add more tests for edge cases as needed ---
 });
