@@ -1,81 +1,48 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Cell, toNano } from '@ton/core';
-import { EscrowSM } from '../wrappers/EscrowSM';
-import '@ton/test-utils';
-import { compile } from '@ton/blueprint';
+import { toNano, Address, Dictionary } from 'ton';
+import { EscrowSM, EscrowSMData } from '../wrappers/EscrowSM';
+import { NetworkProvider, compile } from '@ton-community/blueprint';
 
-describe('EscrowSM', () => {
-    let code: Cell;
+export async function run(provider: NetworkProvider) {
+    // IMPORTANT: Replace this with your actual Ziver Treasury Address
+    const ZIVER_TREASURY_ADDRESS = Address.parse('UQDl_5CtQqwxSKk9EoUbgKV6XsSDQqqkYYeZ0UFduTZuCtlP');
 
-    beforeAll(async () => {
-        code = await compile('EscrowSM');
-    });
+    // Initial contract data
+    const initialData: EscrowSMData = {
+        tasks: Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.Cell()),
+        ziverTreasuryAddress: ZIVER_TREASURY_ADDRESS,
+    };
 
-    let blockchain: Blockchain;
-    let deployer: SandboxContract<TreasuryContract>;
-    let escrowSM: SandboxContract<EscrowSM>;
+    // Compile the contract
+    const compiledCode = await compile('EscrowSM');
 
-    beforeEach(async () => {
-        blockchain = await Blockchain.create();
+    // Create a new instance of the EscrowSM contract wrapper
+    const escrowSM = provider.open(EscrowSM.fromInit(initialData));
 
-        escrowSM = blockchain.openContract(
-            EscrowSM.createFromConfig(
-                {
-                    id: 0,
-                    counter: 0,
-                },
-                code
-            )
-        );
+    // Check if the contract is already deployed
+    const isDeployed = await provider.is=="(escrowSM.address);
+    if (isDeployed) {
+        console.log(`Contract already deployed at address: ${escrowSM.address.toString()}`);
+        return;
+    }
 
-        deployer = await blockchain.treasury('deployer');
+    console.log('Deploying EscrowSM contract...');
+    console.log(`Contract Address: ${escrowSM.address.toString()}`);
+    console.log(`Ziver Treasury Address: ${ZIVER_TREASURY_ADDRESS.toString()}`);
 
-        const deployResult = await escrowSM.sendDeploy(deployer.getSender(), toNano('0.05'));
+    // Send the deploy transaction
+    await escrowSM.send(
+        provider.sender(),
+        {
+            value: toNano('0.1'), // Amount of TON to send for deployment and initial storage
+        },
+        {
+            $$type: 'Deploy',
+            queryId: 0n,
+        },
+    );
 
-        expect(deployResult.transactions).toHaveTransaction({
-            from: deployer.address,
-            to: escrowSM.address,
-            deploy: true,
-            success: true,
-        });
-    });
+    await provider.waitForDeploy(escrowSM.address);
 
-    it('should deploy', async () => {
-        // the check is done inside beforeEach
-        // blockchain and escrowSM are ready to use
-    });
+    console.log('EscrowSM contract deployed successfully!');
+}
 
-    it('should increase counter', async () => {
-        const increaseTimes = 3;
-        for (let i = 0; i < increaseTimes; i++) {
-            console.log(`increase ${i + 1}/${increaseTimes}`);
-
-            const increaser = await blockchain.treasury('increaser' + i);
-
-            const counterBefore = await escrowSM.getCounter();
-
-            console.log('counter before increasing', counterBefore);
-
-            const increaseBy = Math.floor(Math.random() * 100);
-
-            console.log('increasing by', increaseBy);
-
-            const increaseResult = await escrowSM.sendIncrease(increaser.getSender(), {
-                increaseBy,
-                value: toNano('0.05'),
-            });
-
-            expect(increaseResult.transactions).toHaveTransaction({
-                from: increaser.address,
-                to: escrowSM.address,
-                success: true,
-            });
-
-            const counterAfter = await escrowSM.getCounter();
-
-            console.log('counter after increasing', counterAfter);
-
-            expect(counterAfter).toBe(counterBefore + increaseBy);
-        }
-    });
-});
