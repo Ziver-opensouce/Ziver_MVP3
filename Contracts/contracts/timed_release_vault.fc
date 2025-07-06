@@ -15,8 +15,9 @@
 ;; parse_data() decodes the contract's data cell
 ;; Returns (owner_address_slice, release_timestamp, is_released)
 (slice, int, int) parse_data() inline {
-    slice ds = get_data().begin_parse();
-    throw_if(101, slice_empty?(ds)); ;; FIX: Changed ds.empty?() to slice_empty?(ds) based on stdlib.fc
+    cell c4_data = get_data(); ;; FIX: Get data into a cell variable first
+    slice ds = begin_parse(c4_data); ;; FIX: Explicitly call begin_parse with the cell variable
+    throw_if(101, slice_empty?(ds)); ;; FIX: Using global slice_empty? function
     slice owner_address = ds~load_msg_addr();
     int release_timestamp = ds~load_uint(64);
     int is_released = ds~load_int(1); ;; 1 bit for boolean
@@ -46,11 +47,12 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
 
     ;; Load current contract data.
     ;; Declare and initialize variables here
-    slice owner_address = begin_cell().end_cell().begin_parse(); ;; FIX: Keep as it is, no direct null_slice() function
-    int release_timestamp = 0; ;; FIX: Keep as it is
-    int is_released = 0; ;; FIX: Keep as it is
+    slice owner_address = begin_cell().end_cell().begin_parse(); ;; Initialize with an empty slice
+    int release_timestamp = 0; ;; Initialize
+    int is_released = 0; ;; Initialize
 
-    if (slice_empty?(get_data().begin_parse())) { ;; FIX: Changed .empty?() to slice_empty?() based on stdlib.fc
+    cell current_data = get_data(); ;; FIX: Get data into a cell variable
+    if (slice_empty?(begin_parse(current_data))) { ;; FIX: Use slice_empty? with explicit begin_parse
         ;; Initial deployment / First message to an uninitialized contract
         throw_unless(102, cs.slice_bits() >= (32 + 64)); ;; Ensure enough bits for opcode and timestamp
 
@@ -77,7 +79,8 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
     ;; --- Handle Deposit ---
     ;; If the message has no opcode, or a specific deposit opcode, just accept funds
     ;; This allows any simple transfer to increase the contract's balance
-    if (op == 0 || op == op::deposit) { ;; 0 for simple transfer, or explicit op::deposit
+    ;; FIX for type error: Assuming op::deposit is defined as an int constant in op-codes.fc
+    if (op == 0 || op == op::deposit) { 
         ;; Funds are automatically added to my_balance
         ;; No specific logic needed here other than just accepting the message.
         ;; Contract simply holds the balance.
