@@ -327,7 +327,7 @@ export class EscrowSM implements Contract {
 
     // --- Getter Methods (for off-chain reads) ---
 
-    // Getter for off-chain querying a specific task's details
+        // Getter for off-chain querying a specific task's details
     // You will need to implement the corresponding FunC getter named 'get_task_details' in your escrow_s_m.fc
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
         try {
@@ -341,6 +341,7 @@ export class EscrowSM implements Contract {
             const paymentPerPerformerAmount = reader.readBigNumber();
             const numberOfPerformersNeeded = reader.readBigNumber();
             const performersCompleted = reader.readCell(); // This will be the dictionary cell
+            const completedPerformersCount = reader.readBigNumber(); // <-- ADD THIS LINE HERE
             const taskDescriptionHash = reader.readBigNumber();
             const taskGoalHash = reader.readBigNumber();
             const expiryTimestamp = reader.readBigNumber();
@@ -355,7 +356,8 @@ export class EscrowSM implements Contract {
                 taskPosterAddress,
                 paymentPerPerformerAmount,
                 numberOfPerformersNeeded,
-                performersCompleted,
+                performersCompleted: Dictionary.loadOf(0, performerCompletedKeyResolver, performerCompletedValueResolver, performersCompleted), // Load as Dictionary
+                completedPerformersCount, // <-- ADD THIS TO THE RETURN OBJECT
                 taskDescriptionHash,
                 taskGoalHash,
                 expiryTimestamp,
@@ -363,7 +365,7 @@ export class EscrowSM implements Contract {
                 ziverFeePercentage,
                 moderatorAddress,
                 currentState,
-                proofSubmissionMap,
+                proofSubmissionMap: Dictionary.loadOf(0, proofSubmissionMapKeyResolver, proofSubmissionMapValueResolver, proofSubmissionMap), // Load as Dictionary
             };
         } catch (e) {
             console.error(`Error fetching task details for taskId ${taskId}:`, e);
