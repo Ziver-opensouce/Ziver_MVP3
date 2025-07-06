@@ -10,6 +10,30 @@ import {
     TupleReader
 } from '@ton/core';
 
+// Resolver for performerCompleted dictionary keys (Address hash to bigint)
+const performerCompletedKeyResolver = {
+    serialize: (src: bigint, builder: Builder) => { builder.storeUint(src, 256); },
+    parse: (src: Slice) => { return src.loadUint(256); }
+};
+
+// Resolver for performerCompleted dictionary values (empty cell, or could be a boolean/status)
+const performerCompletedValueResolver = {
+    serialize: (src: Cell, builder: Builder) => { builder.storeRef(src); }, // Store a cell reference
+    parse: (src: Slice) => { return src.loadRef(); } // Load a cell reference
+};
+
+// Resolver for proofSubmissionMap dictionary keys (Address hash to bigint)
+const proofSubmissionMapKeyResolver = {
+    serialize: (src: bigint, builder: Builder) => { builder.storeUint(src, 256); },
+    parse: (src: Slice) => { return src.loadUint(256); }
+};
+
+// Resolver for proofSubmissionMap dictionary values (proof hash as bigint, stored in a cell)
+const proofSubmissionMapValueResolver = {
+    serialize: (src: Cell, builder: Builder) => { builder.storeRef(src); }, // Store a cell reference
+    parse: (src: Slice) => { return src.loadRef(); } // Load a cell reference
+};
+
 // Define an Enum for your contract states for better readability
 export enum EscrowState {
     Idle = 0,
