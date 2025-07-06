@@ -16,7 +16,7 @@
 ;; Returns (owner_address_slice, release_timestamp, is_released)
 (slice, int, int) parse_data() inline {
     slice ds = get_data().begin_parse(); 
-    throw_if(101, ds.slice_empty()); ;; Ensure data exists
+    throw_if(101, ds~slice_empty()); ;; Ensure data exists <-- FIX: Changed .slice_empty() to ~slice_empty()
     slice owner_address = ds~load_msg_addr();
     int release_timestamp = ds~load_uint(64);
     int is_released = ds~load_int(1); ;; 1 bit for boolean
@@ -46,11 +46,11 @@ cell store_data(slice owner_address, int release_timestamp, int is_released) inl
 
     ;; Load current contract data.
     ;; Declare variables here, will be assigned below
-    slice owner_address;
+    slice owner_address = null_slice(); ;; FIX: Initialized slice with null_slice()
     int release_timestamp;
     int is_released;
 
-    if (get_data().begin_parse().slice_empty()) {
+    if (get_data().begin_parse()~slice_empty()) { ;; FIX: Changed .slice_empty() to ~slice_empty()
         ;; Initial deployment / First message to an uninitialized contract
         throw_unless(102, cs.slice_bits() >= (32 + 64)); ;; Ensure enough bits for opcode and timestamp
 
