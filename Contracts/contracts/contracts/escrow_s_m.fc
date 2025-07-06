@@ -1,71 +1,235 @@
-#include "imports/stdlib.fc";
+;; escrow_s_m.fc
+;; This is the main FunC file for your Escrow Smart Contract.
 
-const op::increase = "op::increase"c; ;; create an opcode from string using the "c" prefix, this results in 0x7e8764ef opcode in this case
+#include "stdlib.fc"; // Standard library for FunC primitives
 
-;; storage variables
+;; --- Data Storage (c4 register) ---
 
-;; id is required to be able to create different instances of counters
-;; since addresses in TON depend on the initial state of the contract
-global int ctx_id;
-global int ctx_counter;
-
-;; load_data populates storage variables using stored data
-() load_data() impure {
-    var ds = get_data().begin_parse();
-
-    ctx_id = ds~load_uint(32);
-    ctx_counter = ds~load_uint(32);
-
-    ds.end_parse();
+;; Function to load the contract's persistent data from c4
+(slice, cell) load_data() inline {
+    slice ds = get_data().begin_parse();
+    slice ziver_treasury_address = ds~load_msg_addr();
+    cell tasks_dict = ds~load_dict(); // Load the dictionary as a cell
+    return (ziver_treasury_address, tasks_dict);
 }
 
-;; save_data stores storage variables as a cell into persistent storage
-() save_data() impure {
-    set_data(
-        begin_cell()
-            .store_uint(ctx_id, 32)
-            .store_uint(ctx_counter, 32)
-            .end_cell()
-    );
+;; Function to save the contract's persistent data to c4
+() save_data(slice ziver_treasury_address, cell tasks_dict) impure inline {
+    set_data(begin_cell()
+                .store_slice(ziver_treasury_address)
+                .store_dict(tasks_dict)
+             .end_cell());
 }
 
-;; recv_internal is the main function of the contract and is called when it receives a message from other contracts
-() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
-    if (in_msg_body.slice_empty?()) { ;; ignore all empty messages
-        return ();
+;; --- Getters (for off-chain queries) ---
+
+;; get_ziver_treasury_address() method_id
+;; Implements the getZiverTreasuryAddress() getter from EscrowSM.ts
+;; Returns the Ziver Treasury Address
+slice get_ziver_treasury_address() method_id {
+    (slice ziver_treasury_address, cell tasks_dict) = load_data();
+    return ziver_treasury_address;
+}
+
+;; TODO: Implement get_accumulated_fees()
+;; This will require storing accumulated fees in the contract data,
+;; or calculating them from the tasks dictionary.
+;; For now, we'll return 0, and update later.
+int get_accumulated_fees() method_id {
+    return 0; // Placeholder: will implement proper fee accumulation later
+}
+
+
+;; TODO: Implement get_task_details(int task_id) method_id
+;; This will implement the getTaskDetails(taskId) getter from EscrowSM.ts
+;; It should load the tasks dictionary, try to find the task by ID,
+;; and return its details as a tuple.
+;; For now, a placeholder that always returns null.
+tuple get_task_details(int task_id) method_id {
+    (slice ziver_treasury_address, cell tasks_dict) = load_data();
+    ;; In FunC, a dictionary lookup on an unknown key returns null
+    ;; This getter will need to deserialize the TaskDetails cell into a tuple
+    ;; This is a more complex getter, so we'll build it out gradually.
+    ;; For now, let's return an empty tuple if task is not found.
+    cell task_details_cell = udict_get_ref?(tasks_dict, 64, task_id); // Assuming taskId is 64-bit key
+
+    if (null?(task_details_cell)) {
+        return null(); // Return FunC null for not found
+    } else {
+        ;; This is where you'd parse the task_details_cell back into the tuple
+        ;; matching your TaskDetails type. This will be detailed later.
+        ;; For now, just return a dummy tuple or the cell itself if you wish to simplify testing.
+        ;; For proper structure, we need to load each field.
+        slice task_s = task_details_cell.begin_parse();
+        return (
+            task_s~load_msg_addr(),         // taskPosterAddress
+            task_s~load_coins(),            // paymentPerPerformerAmount
+            task_s~load_uint(32),           // numberOfPerformersNeeded
+            task_s~load_dict(),             // performersCompleted (as a cell reference)
+            task_s~load_uint(256),          // taskDescriptionHash
+            task_s~load_uint(256),          // taskGoalHash
+            task_s~load_uint(64),           // expiryTimestamp
+            task_s~load_coins(),            // totalEscrowedFunds
+            task_s~load_uint(8),            // ziverFeePercentage
+            task_s~load_msg_addr(),         // moderatorAddress
+            task_s~load_uint(8),            // currentState (assuming 8 bits for enum)
+            task_s~load_dict()              // proofSubmissionMap (as a cell reference)
+        );
+    }
+}
+
+
+;; --- Internal Message Handler ---
+
+;; This function is called when an internal message is sent to the contract
+() recv_internal() impure {
+    ;; Accept the message to cover gas fees for processing
+    accept_message();
+
+    ;; Load common message info
+    slice in_msg_full = in_msg();
+    int flags = in_msg_full~load_uint(4);
+    if (flags & 1) { ;; ignore bounced messages
+        return (); // Do nothing for bounced messages
     }
 
-    slice cs = in_msg_full.begin_parse();
-    int flags = cs~load_uint(4);
-    if (flags & 1) { ;; ignore all bounced messages
-        return ();
+    slice sender_address = in_msg_full~load_msg_addr();
+    int value_sent = in_msg_full~load_grams(); // Total value sent with the message
+    slice in_msg_body = in_msg_full~load_ref().begin_parse(); // Load message body from a reference
+
+    ;; Load current contract data
+    (slice ziver_treasury_address, cell tasks_dict) = load_data();
+
+    ;; Parse the message opcode and query_id
+    int op = in_msg_body~load_uint(32);
+    int query_id = in_msg_body~load_uint(64);
+
+    ;; --- Handle Opcodes ---
+
+    if (op == 0x1a2b3c4d) { ;; Opcodes.send_task_details (from wrappers/EscrowSM.ts)
+        ;; Check if sender is allowed to create tasks (e.g., Ziver's admin or anyone for now)
+        ;; For now, allowing anyone. Later, add `require(sender_address == global_admin_address)`
+        
+        int task_id = in_msg_body~load_uint(64);
+        int payment_per_performer_amount = in_msg_body~load_coins();
+        int number_of_performers_needed = in_msg_body~load_uint(32);
+        int task_description_hash = in_msg_body~load_uint(256);
+        int task_goal_hash = in_msg_body~load_uint(256);
+        int expiry_timestamp = in_msg_body~load_uint(64);
+        int ziver_fee_percentage = in_msg_body~load_uint(8);
+        slice moderator_address = in_msg_body~load_msg_addr();
+
+        ;; Ensure task_id is unique (not strictly needed for dictionaries, but good for logic)
+        throw_if(101, udict_get_ref?(tasks_dict, 64, task_id)); ;; Throw if task_id already exists
+
+        ;; Initialize new TaskDetails
+        builder task_details_builder = begin_cell()
+            .store_slice(sender_address)                 ;; taskPosterAddress
+            .store_coins(payment_per_performer_amount)
+            .store_uint(number_of_performers_needed, 32)
+            .store_dict(null())                          ;; performersCompleted (empty dict)
+            .store_uint(task_description_hash, 256)
+            .store_uint(task_goal_hash, 256)
+            .store_uint(expiry_timestamp, 64)
+            .store_coins(0)                              ;; totalEscrowedFunds (initially 0, deposited later)
+            .store_uint(ziver_fee_percentage, 8)
+            .store_slice(moderator_address)
+            .store_uint(0, 8)                            ;; currentState = EscrowState.Idle
+            .store_dict(null());                         ;; proofSubmissionMap (empty dict)
+
+        ;; Store the new task details in the dictionary
+        tasks_dict = udict_set_ref(tasks_dict, 64, task_id, task_details_builder.end_cell());
+
+        ;; Save the updated data
+        save_data(ziver_treasury_address, tasks_dict);
+
+        ;; Send confirmation back to sender (optional)
+        var msg = begin_cell()
+            .store_uint(0x18, 6)
+            .store_slice(sender_address)
+            .store_coins(0)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32)
+            .store_uint(0xdeffeed, 32) ;; Custom confirmation opcode
+            .store_uint(query_id, 64)
+            .store_uint(task_id, 64)
+            .end_cell();
+        send_raw_message(msg, 64);
+
+    } else if (op == 0x5e6f7a8b) { ;; Opcodes.deposit_funds
+        int task_id = in_msg_body~load_uint(64);
+
+        ;; Load task details
+        cell task_details_cell = udict_get_ref?(tasks_dict, 64, task_id);
+        throw_if(102, null?(task_details_cell)); // Task not found
+
+        slice task_s = task_details_cell.begin_parse();
+        slice task_poster_address = task_s~load_msg_addr();
+        int payment_per_performer_amount = task_s~load_coins();
+        int number_of_performers_needed = task_s~load_uint(32);
+        task_s~load_dict(); // skip performersCompleted
+        task_s~load_uint(256); // skip taskDescriptionHash
+        task_s~load_uint(256); // skip taskGoalHash
+        task_s~load_uint(64); // skip expiryTimestamp
+        int current_total_escrowed_funds = task_s~load_coins();
+        int ziver_fee_percentage = task_s~load_uint(8); // skip for now
+        slice moderator_address = task_s~load_msg_addr(); // skip for now
+        int current_state = task_s~load_uint(8);
+
+        throw_if(103, sender_address != task_poster_address); // Only task poster can deposit funds
+        throw_if(104, current_state != 0 && current_state != 1); // Only allowed in Idle or TaskSetAndFundsPending state
+
+        int expected_total_funds = payment_per_performer_amount * number_of_performers_needed;
+
+        ;; Calculate required amount (remaining funds needed)
+        int required_amount = expected_total_funds - current_total_escrowed_funds;
+        throw_if(105, value_sent < required_amount); // Ensure enough funds are sent
+
+        current_total_escrowed_funds += value_sent; // Add sent value to escrowed funds
+
+        int new_state = current_state;
+        if (current_total_escrowed_funds >= expected_total_funds) {
+            new_state = 2; // EscrowState.Active
+        } else {
+            new_state = 1; // EscrowState.TaskSetAndFundsPending
+        }
+
+        ;; Update TaskDetails cell
+        builder updated_task_details_builder = begin_cell()
+            .store_slice(task_poster_address)
+            .store_coins(payment_per_performer_amount)
+            .store_uint(number_of_performers_needed, 32)
+            .store_dict(task_s~preload_dict()) // Re-store performersCompleted
+            .store_uint(task_s~preload_uint(256)) // Re-store taskDescriptionHash
+            .store_uint(task_s~preload_uint(256)) // Re-store taskGoalHash
+            .store_uint(task_s~preload_uint(64)) // Re-store expiryTimestamp
+            .store_coins(current_total_escrowed_funds) // Updated funds
+            .store_uint(ziver_fee_percentage, 8) // Re-store fee percentage
+            .store_slice(moderator_address) // Re-store moderator address
+            .store_uint(new_state, 8) // Updated state
+            .store_dict(task_s~preload_dict()); // Re-store proofSubmissionMap
+
+        tasks_dict = udict_set_ref(tasks_dict, 64, task_id, updated_task_details_builder.end_cell());
+        save_data(ziver_treasury_address, tasks_dict);
+
+        ;; Send change back if overpaid
+        if (value_sent > required_amount) {
+            var overpay_msg = begin_cell()
+                .store_uint(0x18, 6)
+                .store_slice(sender_address)
+                .store_coins(value_sent - required_amount)
+                .store_uint(0, 1 + 4 + 4 + 64 + 32)
+                .end_cell();
+            send_raw_message(overpay_msg, 0); // Send back excess funds
+        }
+
     }
+    ;; TODO: Implement other opcodes (verify_task_completion, submit_proof, raise_dispute, etc.)
+    ;; Each opcode will be an `else if` block, similar to deposit_funds.
+    ;; The logic inside will load the relevant task, perform checks, update state, and save.
+    ;; Remember to handle fees and potential refunds/transfers.
 
-    load_data(); ;; here we populate the storage variables
-
-    int op = in_msg_body~load_uint(32); ;; by convention, the first 32 bits of incoming message is the op
-    int query_id = in_msg_body~load_uint(64); ;; also by convention, the next 64 bits contain the "query id", although this is not always the case
-
-    if (op == op::increase) {
-        int increase_by = in_msg_body~load_uint(32);
-        ctx_counter += increase_by;
-        save_data();
-        return ();
+    ;; Example of handling an unknown opcode (optional)
+    else {
+        throw(0xffff); ;; Unknown opcode exception
     }
-
-    throw(0xffff); ;; if the message contains an op that is not known to this contract, we throw
-}
-
-;; get methods are a means to conveniently read contract data using, for example, HTTP APIs
-;; they are marked with method_id
-;; note that unlike in many other smart contract VMs, get methods cannot be called by other contracts
-
-int get_counter() method_id {
-    load_data();
-    return ctx_counter;
-}
-
-int get_id() method_id {
-    load_data();
-    return ctx_id;
 }
