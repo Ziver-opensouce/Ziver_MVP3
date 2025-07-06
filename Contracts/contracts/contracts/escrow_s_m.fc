@@ -2,7 +2,6 @@
 ;; This is the main FunC file for your Escrow Smart Contract.
 
 #include "stdlib.fc"; // Standard library for FunC primitives. This include is crucial for udict functions.
-#include "opcodes.fc"; // Assuming you have an opcodes.fc, otherwise remove or define opcodes here.
 
 ;; Error codes
 const int error::not_owner = 100;
@@ -29,17 +28,17 @@ const int error::unknown_opcode = 255;
 
 
 ;; Opcodes (These must match the ones defined in wrappers/EscrowSM.ts)
-;; If you don't have an opcodes.fc, define them directly here:
-;; const int op::deploy = 0x61737467;
-;; const int op::send_task_details = 0x1a2b3c4d;
-;; const int op::deposit_funds = 0x5e6f7a8b;
-;; const int op::verify_task_completion = 0x9c0d1e2f;
-;; const int op::submit_proof = 0x3a4b5c6d;
-;; const int op::raise_dispute = 0x7e8f9a0b;
-;; const int op::resolve_dispute = 0x11223344;
-;; const int op::withdraw_funds = 0x55667788;
-;; const int op::cancel_task_and_refund = 0x99aabbcc;
-;; const int op::withdraw_fee = 0xddccbbaa;
+;; Defined directly here as opcodes.fc is not used.
+const int op::deploy = 0x61737467;
+const int op::send_task_details = 0x1a2b3c4d;
+const int op::deposit_funds = 0x5e6f7a8b;
+const int op::verify_task_completion = 0x9c0d1e2f;
+const int op::submit_proof = 0x3a4b5c6d;
+const int op::raise_dispute = 0x7e8f9a0b;
+const int op::resolve_dispute = 0x11223344;
+const int op::withdraw_funds = 0x55667788;
+const int op::cancel_task_and_refund = 0x99aabbcc;
+const int op::withdraw_fee = 0xddccbbaa;
 
 
 ;; EscrowState Enum values (Must match wrappers/EscrowSM.ts)
@@ -291,8 +290,8 @@ tuple get_task_details(int task_id) method_id {
         throw_if(error::task_not_in_active_state, current_state != STATE_ACTIVE && current_state != STATE_PENDING_VERIFICATION);
 
         ;; Check if performer already marked as completed
-        int is_completed = udict_get_ref?(performers_completed, 256, performer_address.as_slice().hash()); // Assuming address hash as key
-        throw_if(error::already_completed_performer, is_completed); // If value exists, performer is already completed
+        int is_completed_entry = udict_get_ref?(performers_completed, 256, performer_address.as_slice().hash()); // check if entry exists
+        throw_if(error::already_completed_performer, ~ null?(is_completed_entry)); // Throw if not null (i.e., exists)
 
         ;; Mark performer as completed (store a non-null value, e.g., an empty cell or 1)
         performers_completed = udict_set_ref(performers_completed, 256, performer_address.as_slice().hash(), begin_cell().end_cell());
@@ -322,7 +321,7 @@ tuple get_task_details(int task_id) method_id {
         ;; Update state if all performers are completed
         int current_completed_count = udict_len(performers_completed, 256); // Assuming udict_len is available
         int new_state = current_state;
-        if (current_completed_count == number_of_performers_needed) {
+        if (current_completed_count >= number_of_performers_needed) { // Use >= in case multiple calls make it exceed
             new_state = STATE_SETTLED; // All performers done, task settled
         } else {
             new_state = STATE_PENDING_VERIFICATION; // Still waiting for others
@@ -372,7 +371,8 @@ tuple get_task_details(int task_id) method_id {
         throw_if(error::task_not_in_active_or_pending, current_state != STATE_ACTIVE && current_state != STATE_PENDING_VERIFICATION);
 
         ;; Check if proof already submitted by this sender
-        throw_if(error::proof_already_submitted, udict_get_ref?(proof_submission_map, 256, sender_address.as_slice().hash()));
+        int proof_entry = udict_get_ref?(proof_submission_map, 256, sender_address.as_slice().hash());
+        throw_if(error::proof_already_submitted, ~ null?(proof_entry));
 
         ;; Store proof hash with sender address as key
         proof_submission_map = udict_set_ref(proof_submission_map, 256, sender_address.as_slice().hash(), begin_cell().store_uint(proof_hash, 256).end_cell());
@@ -418,7 +418,10 @@ tuple get_task_details(int task_id) method_id {
         cell proof_submission_map = task_s~load_dict();
 
         throw_if(error::invalid_state, current_state != STATE_ACTIVE && current_state != STATE_PENDING_VERIFICATION);
-        throw_if(error::not_performer_or_moderator, sender_address != task_poster_address && null?(udict_get_ref?(proof_submission_map, 256, sender_address.as_slice().hash()))); // Only poster or a performer who submitted proof can raise dispute
+        
+        ;; Check if sender is task poster OR a performer who submitted proof
+        int is_performer_with_proof = udict_get_ref?(proof_submission_map, 256, sender_address.as_slice().hash());
+        throw_if(error::not_performer_or_moderator, sender_address != task_poster_address && null?(is_performer_with_proof));
 
         ;; Update state to Disputed
         int new_state = STATE_DISPUTED;
@@ -465,15 +468,8 @@ tuple get_task_details(int task_id) method_id {
 
         throw_if(error::not_moderator, sender_address != moderator_address);
         throw_if(error::task_not_in_disputed_state, current_state != STATE_DISPUTED);
-
-        ;; Resolve logic: If winner is task poster, refund remaining funds to poster
-        ;; If winner is a performer, distribute funds to verified performers (or to the specific winner if only one)
-
-        ;; Simplified example: if winner is task poster, refund all remaining escrowed funds.
-        ;; If winner is a performer, send the full payment to them and mark as completed.
-        ;; Realistically, dispute resolution might be more granular (partial payouts, etc.)
         
-        int new_state = STATE_SETTLED; // Task settled after dispute resolution
+        int new_state = STATE_SETTLED;
 
         if (winner_address == task_poster_address) {
             ;; Refund all remaining funds to task poster (minus gas)
@@ -483,21 +479,16 @@ tuple get_task_details(int task_id) method_id {
                 .store_coins(current_total_escrowed_funds)
                 .store_uint(0, 1 + 4 + 4 + 64 + 32)
                 .end_cell();
-            send_raw_message(refund_msg, 64); // Send all remaining balance
-            current_total_escrowed_funds = 0; // Funds are gone
+            send_raw_message(refund_msg, 64);
+            current_total_escrowed_funds = 0;
         } else {
             ;; Assume winner_address is a performer. Pay them.
-            ;; This simple example assumes one winner gets all. For multiple performers,
-            ;; more complex logic involving who has submitted proof would be needed.
-            
-            ;; Check if performer already marked as completed
-            int is_completed = udict_get_ref?(performers_completed, 256, winner_address.as_slice().hash());
-            throw_if(error::already_completed_performer, is_completed);
+            ;; This is similar to verify_task_completion logic for a single performer in dispute.
+            int is_completed_entry = udict_get_ref?(performers_completed, 256, winner_address.as_slice().hash());
+            throw_if(error::already_completed_performer, ~ null?(is_completed_entry));
 
-            ;; Mark performer as completed
             performers_completed = udict_set_ref(performers_completed, 256, winner_address.as_slice().hash(), begin_cell().end_cell());
 
-            ;; Calculate fee and amount to send to winner
             int fee_amount = (payment_per_performer_amount * ziver_fee_percentage) / 100;
             int amount_to_winner = payment_per_performer_amount - fee_amount;
 
@@ -514,15 +505,13 @@ tuple get_task_details(int task_id) method_id {
                 .end_cell();
             send_raw_message(winner_msg, 64);
 
-             ;; Update state if all performers are completed (same logic as verify_task_completion)
             int current_completed_count = udict_len(performers_completed, 256);
-            if (current_completed_count == number_of_performers_needed) {
+            if (current_completed_count >= number_of_performers_needed) {
                 new_state = STATE_SETTLED;
             } else {
                 new_state = STATE_PENDING_VERIFICATION;
             }
         }
-
 
         ;; Update TaskDetails cell
         builder updated_task_details_builder = begin_cell()
@@ -546,15 +535,12 @@ tuple get_task_details(int task_id) method_id {
         int task_id = in_msg_body~load_uint(64);
 
         ;; This opcode is typically for performers to claim their earnings after verification.
-        ;; We've integrated payment directly into verify_task_completion for simplicity.
-        ;; If you want a separate 'claim' step, you'd implement it here.
+        ;; Given our current verify_task_completion sends funds directly, this might be redundant
+        ;; unless you want a separate "claim" flow.
         ;; For now, this is a placeholder. If funds are already sent in verify_task_completion,
         ;; this message wouldn't be strictly necessary for performers.
         
-        ;; This logic would retrieve the task, check if the sender is a verified performer
-        ;; who hasn't been paid, and if the task is settled. Then calculate and send their share.
-
-        throw(0xffff); // Placeholder: Implement this if needed for a separate claim flow.
+        throw(error::unknown_opcode); // Placeholder: Implement this if needed for a separate claim flow.
 
     } else if (op == op::cancel_task_and_refund) { ;; Opcodes.cancel_task_and_refund
         int task_id = in_msg_body~load_uint(64);
@@ -636,4 +622,3 @@ tuple get_task_details(int task_id) method_id {
         throw(error::unknown_opcode); ;; Unknown opcode exception
     }
 }
-
