@@ -161,7 +161,7 @@ tuple get_task_details(int task_id) method_id {
         slice moderator_address = in_msg_body~load_msg_addr();
 
         ;; Ensure task_id is unique
-        throw_if(error::task_already_exists, udict_get_ref?(tasks_dict, 64, task_id));
+        throw_if(error::task_already_exists, ~ null?(udict_get_ref?(tasks_dict, 64, task_id)));
 
         ;; Initialize new TaskDetails
         builder task_details_builder = begin_cell()
