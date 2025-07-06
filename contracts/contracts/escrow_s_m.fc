@@ -1,7 +1,8 @@
 ;; escrow_s_m.fc
 ;; This is the main FunC file for your Escrow Smart Contract.
 
-#include "imports/stdlib.fc"; // Standard library for FunC primitives. This include is crucial for udict functions.
+#include "imports/stdlib.fc";
+ // Standard library for FunC primitives. This include is crucial for udict functions.
 
 ;; Error codes
 const int error::not_owner = 100;
