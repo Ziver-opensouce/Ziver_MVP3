@@ -62,7 +62,8 @@ const int STATE_REFUNDED = 7;
 ;; ============================================
 ;; Storage
 ;; ============================================
-;; Each task stores its own replay cache (last_query_id, 64 bits)
+;; [ziver_treasury_address, tasks_dict, accumulated_ziver_fees]
+;; Task Storage in tasks_dict:
 ;; [Poster, Payment, N, PerfCompleted, PerfCount, DescHash, GoalHash, Expiry, Funds, Fee%, Mod, State, ProofMap, LastQueryId]
 
 (slice, cell, int) load_data() inline {
@@ -84,58 +85,64 @@ const int STATE_REFUNDED = 7;
 }
 
 ;; ============================================
+;; Event Logging (codes for hackathon demo)
+;; ============================================
+() log_event(int event_code, int task_id, int extra) impure {
+    ;; event_code: 1=created, 2=completed, 3=expired, 4=disputed, 5=resolved, 6=fees_withdrawn, 7=cancelled
+    ;; For now, this is a placeholder. A real implementation might use external messages.
+}
+
+;; ============================================
 ;; Getters (off-chain, view methods)
 ;; ============================================
 slice get_ziver_treasury_address() method_id {
     (slice ziver_treasury_address, cell _, int _) = load_data();
     return ziver_treasury_address;
 }
+
 int get_accumulated_fees() method_id {
     (_, _, int accumulated_ziver_fees) = load_data();
     return accumulated_ziver_fees;
 }
+
 tuple get_task_details(int task_id) method_id {
     (_, cell tasks_dict, _) = load_data();
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
-    if (~ found) { return null(); }
+    if (~ found) {
+        return null();
+    }
     slice s = c.begin_parse();
-    return (
-        s~load_msg_addr(), s~load_coins(), s~load_uint(32), s~load_dict(), s~load_uint(32),
-        s~load_uint(256), s~load_uint(256), s~load_uint(64), s~load_coins(), s~load_uint(8),
-        s~load_msg_addr(), s~load_uint(8), s~load_dict(), s~load_uint(64)
-    );
+    return s;
 }
 
 ;; ============================================
 ;; Internal Message Handler (all logic here)
 ;; ============================================
 () recv_internal() impure {
-    slice in_msg_full = get_data().begin_parse();
-    int flags = in_msg_full~load_uint(4);
-    if (flags & 1) { return (); }
+    slice in_msg = in_msg_body();
+    int op = in_msg~load_uint(32);
+    int query_id = in_msg~load_uint(64);
 
-    slice sender_address = in_msg_full~load_msg_addr();
-    int value_sent = in_msg_full~load_coins();
-    slice in_msg_body = in_msg_full;
+    slice sender_address = sender();
+    int msg_value = in_msg_value();
 
     (slice ziver_treasury_address, cell tasks_dict, int accumulated_ziver_fees) = load_data();
-    int op = in_msg_body~load_uint(32);
-    int query_id = in_msg_body~load_uint(64);
 
     ;; ============================================
     ;; 1. Task Creation: Poster creates a new task
     ;; ============================================
     if (op == op_send_task_details) {
-        int task_id = in_msg_body~load_uint(64);
-        int payment_per_performer_amount = in_msg_body~load_coins();
-        int number_of_performers_needed = in_msg_body~load_uint(32);
-        int task_description_hash = in_msg_body~load_uint(256);
-        int task_goal_hash = in_msg_body~load_uint(256);
-        int expiry_timestamp = in_msg_body~load_uint(64);
-        int ziver_fee_percentage = in_msg_body~load_uint(8);
-        slice moderator_address = in_msg_body~load_msg_addr();
+        int task_id = in_msg~load_uint(64);
+        int payment_per_performer_amount = in_msg~load_coins();
+        int number_of_performers_needed = in_msg~load_uint(32);
+        int task_description_hash = in_msg~load_uint(256);
+        int task_goal_hash = in_msg~load_uint(256);
+        int expiry_timestamp = in_msg~load_uint(64);
+        int ziver_fee_percentage = in_msg~load_uint(8);
+        slice moderator_address = in_msg~load_msg_addr();
 
-        throw_if(error_task_already_exists, udict_get_ref?(tasks_dict, 64, task_id));
+        (cell _, int found) = udict_get_ref?(tasks_dict, 64, task_id);
+        throw_if(error_task_already_exists, found);
 
         builder c = begin_cell()
             .store_slice(sender_address)
@@ -151,16 +158,17 @@ tuple get_task_details(int task_id) method_id {
             .store_slice(moderator_address)
             .store_uint(STATE_IDLE, 8)
             .store_dict(new_dict())
-            .store_uint(query_id, 64); ;; LastQueryId for replay protection
+            .store_uint(query_id, 64);
 
-        tasks_dict = udict_set_ref(tasks_dict, 64, task_id, c.end_cell());
+        tasks_dict~udict_set_ref(64, task_id, c.end_cell());
         save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
-
+        log_event(1, task_id, 0);
+    }
     ;; ============================================
     ;; 2. Deposit Funds: Poster funds task escrow
     ;; ============================================
-    } else if (op == op_deposit_funds) {
-        int task_id = in_msg_body~load_uint(64);
+    elseif (op == op_deposit_funds) {
+        int task_id = in_msg~load_uint(64);
         (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
         throw_if(error_task_not_found, ~ found);
         slice s = c.begin_parse();
@@ -170,80 +178,95 @@ tuple get_task_details(int task_id) method_id {
         int number_of_performers_needed = s~load_uint(32);
         cell performers_completed = s~load_dict();
         int completed_performers_count = s~load_uint(32);
-        int task_description_hash = s~load_uint(256);
-        int task_goal_hash = s~load_uint(256);
+        s~skip_bits(512); ;; skip hashes
         int expiry_timestamp = s~load_uint(64);
         int current_total_escrowed_funds = s~load_coins();
-        int ziver_fee_percentage = s~load_uint(8);
-        slice moderator_address = s~load_msg_addr();
+        s~skip_bits(8); ;; skip fee
+        s~skip_bits(267); ;; skip mod address
         int current_state = s~load_uint(8);
-        cell proof_submission_map = s~load_dict();
         int last_query_id = s~load_uint(64);
 
-        int now_ts = now();
-        throw_if(error_task_expired, now_ts > expiry_timestamp);
-        throw_if(error_not_task_poster, ~slice_equal(sender_address, task_poster_address));
+        throw_if(error_task_expired, now() > expiry_timestamp);
+        throw_if(error_not_task_poster, ~ slice_equal(sender_address, task_poster_address));
         throw_if(error_invalid_state, (current_state != STATE_IDLE) & (current_state != STATE_TASK_SET_AND_FUNDS_PENDING));
         throw_if(error_replay, query_id == last_query_id);
 
         int expected_total_funds = payment_per_performer_amount * number_of_performers_needed;
         int required_amount = expected_total_funds - current_total_escrowed_funds;
-        throw_if(error_insufficient_funds, value_sent < required_amount);
+        throw_if(error_insufficient_funds, msg_value < required_amount);
 
-        current_total_escrowed_funds += value_sent;
+        current_total_escrowed_funds += msg_value;
         int new_state = (current_total_escrowed_funds >= expected_total_funds) ? STATE_ACTIVE : STATE_TASK_SET_AND_FUNDS_PENDING;
-
-        builder b = begin_cell()
-            .store_slice(task_poster_address)
-            .store_coins(payment_per_performer_amount)
-            .store_uint(number_of_performers_needed, 32)
-            .store_dict(performers_completed)
-            .store_uint(completed_performers_count, 32)
-            .store_uint(task_description_hash, 256)
-            .store_uint(task_goal_hash, 256)
-            .store_uint(expiry_timestamp, 64)
-            .store_coins(current_total_escrowed_funds)
-            .store_uint(ziver_fee_percentage, 8)
-            .store_slice(moderator_address)
-            .store_uint(new_state, 8)
-            .store_dict(proof_submission_map)
-            .store_uint(query_id, 64);
-
-        tasks_dict = udict_set_ref(tasks_dict, 64, task_id, b.end_cell());
+        
+        s~force_restore();
+        builder b = begin_cell().store_slice(s);
+        b~store_coins(current_total_escrowed_funds);
+        b~skip_bits(8 + 267);
+        b~store_uint(new_state, 8);
+        b~skip_bits(256);
+        b~store_uint(query_id, 64);
+        
+        tasks_dict~udict_set_ref(64, task_id, b.end_cell());
         save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
 
-        if (value_sent > required_amount) {
-            cell overpay_msg = begin_cell()
-                .store_uint(0x18, 6)
-                .store_slice(sender_address)
-                .store_coins(value_sent - required_amount)
-                .store_uint(0, 1 + 4 + 4 + 64 + 32)
-                .end_cell();
-            send_raw_message(overpay_msg, 0);
+        if (msg_value > required_amount) {
+            send_raw_message(begin_cell().store_uint(0x10, 6).store_slice(sender_address).store_coins(msg_value - required_amount).store_uint(0, 1).end_cell(), 1);
         }
+    }
+    ;; ============================================
+    ;; 3. Auto-Expire Task
+    ;; ============================================
+    elseif (op == op_expire_task) {
+        int task_id = in_msg~load_uint(64);
+        (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
+        throw_if(error_task_not_found, ~ found);
+        slice s = c.begin_parse();
+        slice task_poster_address = s~load_msg_addr();
+        s~skip_bits(32+32+256+32);
+        int expiry_timestamp = s~load_uint(64);
+        int current_total_escrowed_funds = s~load_coins();
+        s~skip_bits(8+267);
+        int current_state = s~load_uint(8);
+        
+        throw_if(error_invalid_state, (current_state == STATE_SETTLED) | (current_state == STATE_EXPIRED) | (current_state == STATE_REFUNDED));
+        throw_if(error_task_expired, now() < expiry_timestamp);
 
+        if (current_total_escrowed_funds > 0) {
+            send_raw_message(begin_cell().store_uint(0x18, 6).store_slice(task_poster_address).store_coins(current_total_escrowed_funds).store_uint(0, 1).end_cell(), 64);
+            current_total_escrowed_funds = 0;
+        }
+        
+        s~force_restore();
+        builder b = begin_cell().store_slice(s);
+        b~skip_bits(32+32+256+32+64);
+        b~store_coins(current_total_escrowed_funds);
+        b~skip_bits(8+267);
+        b~store_uint(STATE_EXPIRED, 8);
+        b~skip_bits(256);
+        b~store_uint(query_id, 64);
+        
+        tasks_dict~udict_set_ref(64, task_id, b.end_cell());
+        save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
+        log_event(3, task_id, 0);
+    }
+    ;; ... other op handlers ...
     ;; ============================================
     ;; 9. Withdraw Protocol Fees: Only treasury can withdraw
     ;; ============================================
-    } else if (op == op_withdraw_fee) {
-        throw_if(error_not_owner, ~slice_equal(sender_address, ziver_treasury_address));
+    elseif (op == op_withdraw_fee) {
+        throw_if(error_not_owner, ~ slice_equal(sender_address, ziver_treasury_address));
         throw_if(error_no_accumulated_fees, accumulated_ziver_fees <= 0);
 
-        cell withdraw_msg = begin_cell()
-            .store_uint(0x18, 6)
-            .store_slice(ziver_treasury_address)
-            .store_coins(accumulated_ziver_fees)
-            .store_uint(0, 1 + 4 + 4 + 64 + 32)
-            .end_cell();
-        send_raw_message(withdraw_msg, 64);
-
+        send_raw_message(begin_cell().store_uint(0x18, 6).store_slice(ziver_treasury_address).store_coins(accumulated_ziver_fees).store_uint(0, 1).end_cell(), 64);
+        
         accumulated_ziver_fees = 0;
         save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
-
+        log_event(6, 0, 0);
+    }
     ;; ============================================
     ;; 10. Unknown Opcode
     ;; ============================================
-    } else {
+    else {
         throw(error_unknown_opcode);
     }
 }
