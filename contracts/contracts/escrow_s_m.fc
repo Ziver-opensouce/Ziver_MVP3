@@ -315,7 +315,7 @@ slice get_task_details(int task_id) method_id {
         throw_if(error_task_not_in_active_state, (current_state != STATE_ACTIVE) & (current_state != STATE_PENDING_VERIFICATION));
         throw_if(error_replay, query_id == last_query_id);
 
-        (cell _, int is_completed_entry) = udict_get_ref?(performers_completed, 256, slice_hash(performer_address));
+        (cell dummy_cell, int is_completed_entry) = udict_get_ref?(performers_completed, 256, slice_hash(performer_address));
         throw_if(error_already_completed_performer, is_completed_entry);
 
         performers_completed~udict_set_ref(256, slice_hash(performer_address), begin_cell().end_cell());
