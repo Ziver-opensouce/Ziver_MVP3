@@ -112,7 +112,12 @@ tuple get_task_details(int task_id) method_id {
         return null();
     }
     slice s = c.begin_parse();
-    return s;
+    ;; Parse the slice and return its contents as a tuple to match the function's return type
+    return (
+        s~load_msg_addr(), s~load_coins(), s~load_uint(32), s~load_dict(), s~load_uint(32),
+        s~load_uint(256), s~load_uint(256), s~load_uint(64), s~load_coins(), s~load_uint(8),
+        s~load_msg_addr(), s~load_uint(8), s~load_dict(), s~load_uint(64)
+    );
 }
 
 ;; ============================================
