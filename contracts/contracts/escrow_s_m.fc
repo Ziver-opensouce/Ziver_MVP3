@@ -98,20 +98,14 @@ slice get_ziver_treasury_address() method_id {
     (slice ziver_treasury_address, cell _, int _) = load_data();
     return ziver_treasury_address;
 }
-int get_accumulated_fees() method_id {
-    (_, _, int accumulated_ziver_fees) = load_data();
-    return accumulated_ziver_fees;
-}
-tuple get_task_details(int task_id) method_id {
+int tuple get_task_details(int task_id) method_id {
     (_, cell tasks_dict, _) = load_data();
-    cell c = udict_get_ref?(tasks_dict, 64, task_id);
-    if (null?(c)) return null();
+    (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
+    if (~ found) {
+        return null();
+    }
     slice s = c.begin_parse();
-    return (
-        s~load_msg_addr(), s~load_coins(), s~load_uint(32), s~load_dict(), s~load_uint(32),
-        s~load_uint(256), s~load_uint(256), s~load_uint(64), s~load_coins(), s~load_uint(8),
-        s~load_msg_addr(), s~load_uint(8), s~load_dict(), s~load_uint(64)
-    );
+    return s;
 }
 
 ;; ============================================
