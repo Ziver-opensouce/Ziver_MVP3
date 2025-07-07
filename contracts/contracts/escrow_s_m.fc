@@ -383,7 +383,7 @@ slice get_task_details(int task_id) method_id {
         throw_if(error_task_not_in_active_or_pending, (current_state != STATE_ACTIVE) & (current_state != STATE_PENDING_VERIFICATION));
         throw_if(error_replay, query_id == last_query_id);
 
-        (cell _, int proof_found) = udict_get_ref?(proof_submission_map, 256, slice_hash(sender_address));
+        (cell dummy_cell, int proof_found) = udict_get_ref?(proof_submission_map, 256, slice_hash(sender_address));
         throw_if(error_proof_already_submitted, proof_found);
 
         proof_submission_map~udict_set_ref(256, slice_hash(sender_address), begin_cell().store_uint(proof_hash, 256).end_cell());
@@ -434,7 +434,7 @@ slice get_task_details(int task_id) method_id {
         throw_if(error_invalid_state, (current_state != STATE_ACTIVE) & (current_state != STATE_PENDING_VERIFICATION));
         throw_if(error_replay, query_id == last_query_id);
 
-        (cell _, int is_performer_with_proof) = udict_get_ref?(proof_submission_map, 256, slice_hash(sender_address));
+        (cell dummy_cell, int is_performer_with_proof) = udict_get_ref?(proof_submission_map, 256, slice_hash(sender_address));
             throw_if(error_not_performer_or_moderator, (~ slice_equal?(sender_address, task_poster_address)) & (~ is_performer_with_proof));
 
         builder b = begin_cell()
@@ -492,7 +492,7 @@ slice get_task_details(int task_id) method_id {
             send_raw_message(refund_msg, 64);
             current_total_escrowed_funds = 0;
         } else {
-            (cell _, int is_completed_entry) = udict_get_ref?(performers_completed, 256, slice_hash(winner_address));
+            (cell dummy_cell, int is_completed_entry) = udict_get_ref?(performers_completed, 256, slice_hash(winner_address));
             throw_if(error_already_completed_performer, is_completed_entry);
             performers_completed~udict_set_ref(256, slice_hash(winner_address), begin_cell().end_cell());
             completed_performers_count += 1;
