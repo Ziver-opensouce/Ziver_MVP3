@@ -8,29 +8,29 @@
 ;; --------------------------------------------
 ;; Error Codes
 ;; --------------------------------------------
-int error_not_owner = 100;
-int error_task_already_exists = 101;
-int error_task_not_found = 102;
-int error_not_task_poster = 103;
-int error_invalid_state = 104;
-int error_insufficient_funds = 105;
-int error_task_not_in_active_state = 106;
-int error_invalid_performer_address = 107;
-int error_performer_not_found = 108;
-int error_task_not_pending_verification = 109;
-int error_proof_already_submitted = 110;
-int error_not_performer_or_moderator = 111;
-int error_task_not_in_disputed_state = 112;
-int error_not_moderator = 113;
-int error_no_accumulated_fees = 114;
-int error_expired_task = 115;
-int error_task_not_set_and_funds_pending = 116;
-int error_task_not_in_active_or_pending = 117;
-int error_already_completed_performer = 118;
-int error_not_enough_performers_completed = 119;
-int error_unknown_opcode = 255;
-int error_task_expired = 256;
-int error_replay = 257; ;; Advanced security: replay protection
+;; int error_not_owner = 100;
+;; int error_task_already_exists = 101;
+;; int error_task_not_found = 102;
+;; int error_not_task_poster = 103;
+;; int error_invalid_state = 104;
+;; int error_insufficient_funds = 105;
+;; int error_task_not_in_active_state = 106;
+;; int error_invalid_performer_address = 107;
+;; int error_performer_not_found = 108;
+;; int error_task_not_pending_verification = 109;
+;; int error_proof_already_submitted = 110;
+;; int error_not_performer_or_moderator = 111;
+;; int error_task_not_in_disputed_state = 112;
+;; int error_not_moderator = 113;
+;; int error_no_accumulated_fees = 114;
+;; int error_expired_task = 115;
+;; int error_task_not_set_and_funds_pending = 116;
+;; int error_task_not_in_active_or_pending = 117;
+;; int error_already_completed_performer = 118;
+;; int error_not_enough_performers_completed = 119;
+;; int error_unknown_opcode = 255;
+;; int error_task_expired = 256;
+;; int error_replay = 257; ;; Advanced security: replay protection
 
 ;; --------------------------------------------
 ;; Opcodes
