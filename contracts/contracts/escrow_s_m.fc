@@ -199,7 +199,7 @@ slice get_task_details(int task_id) method_id {
         int last_query_id = s~load_uint(64);
 
         throw_if(error_task_expired, now() > expiry_timestamp);
-        throw_if(error_not_task_poster, ~ slice_equal(sender_address, task_poster_address));
+        throw_if(error_not_task_poster, ~ slice_eq(sender_address, task_poster_address));
         throw_if(error_invalid_state, (current_state != STATE_IDLE) & (current_state != STATE_TASK_SET_AND_FUNDS_PENDING));
         throw_if(error_replay, query_id == last_query_id);
 
