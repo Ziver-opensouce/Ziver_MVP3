@@ -35,29 +35,29 @@
 ;; --------------------------------------------
 ;; Opcodes
 ;; --------------------------------------------
-int op_deploy = 0x61737467;
-int op_send_task_details = 0x1a2b3c4d;
-int op_deposit_funds = 0x5e6f7a8b;
-int op_verify_task_completion = 0x9c0d1e2f;
-int op_submit_proof = 0x3a4b5c6d;
-int op_raise_dispute = 0x7e8f9a0b;
-int op_resolve_dispute = 0x11223344;
-int op_withdraw_funds = 0x55667788;
-int op_cancel_task_and_refund = 0x99aabbcc;
-int op_withdraw_fee = 0xddccbbaa;
-int op_expire_task = 0xaabbccdd;
+;; int op_deploy = 0x61737467;
+;; int op_send_task_details = 0x1a2b3c4d;
+;; int op_deposit_funds = 0x5e6f7a8b;
+;; int op_verify_task_completion = 0x9c0d1e2f;
+;; int op_submit_proof = 0x3a4b5c6d;
+;; int op_raise_dispute = 0x7e8f9a0b;
+;; int op_resolve_dispute = 0x11223344;
+;; int op_withdraw_funds = 0x55667788;
+;; int op_cancel_task_and_refund = 0x99aabbcc;
+;; int op_withdraw_fee = 0xddccbbaa;
+;; int op_expire_task = 0xaabbccdd;
 
 ;; --------------------------------------------
 ;; Escrow State Enum
 ;; --------------------------------------------
-int STATE_IDLE = 0;
-int STATE_TASK_SET_AND_FUNDS_PENDING = 1;
-int STATE_ACTIVE = 2;
-int STATE_PENDING_VERIFICATION = 3;
-int STATE_SETTLED = 4;
-int STATE_DISPUTED = 5;
-int STATE_EXPIRED = 6;
-int STATE_REFUNDED = 7;
+;; int STATE_IDLE = 0;
+;; int STATE_TASK_SET_AND_FUNDS_PENDING = 1;
+;; int STATE_ACTIVE = 2;
+;; int STATE_PENDING_VERIFICATION = 3;
+;; int STATE_SETTLED = 4;
+;; int STATE_DISPUTED = 5;
+;; int STATE_EXPIRED = 6;
+;; int STATE_REFUNDED = 7;
 
 ;; ============================================
 ;; Storage
