@@ -203,7 +203,7 @@ slice get_task_details(int task_id) method_id {
         int last_query_id = s~load_uint(64);
 
         throw_if(error_task_expired, now() > expiry_timestamp);
-        throw_if(error_not_task_poster, ~ slice_eq(sender_address, task_poster_address));
+        throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
         throw_if(error_invalid_state, (current_state != STATE_IDLE) & (current_state != STATE_TASK_SET_AND_FUNDS_PENDING));
         throw_if(error_replay, query_id == last_query_id);
 
@@ -315,7 +315,7 @@ slice get_task_details(int task_id) method_id {
         cell proof_submission_map = s~load_dict();
         int last_query_id = s~load_uint(64);
 
-        throw_if(error_not_task_poster, ~ slice_equal(sender_address, task_poster_address));
+        throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
         throw_if(error_task_not_in_active_state, (current_state != STATE_ACTIVE) & (current_state != STATE_PENDING_VERIFICATION));
         throw_if(error_replay, query_id == last_query_id);
 
@@ -435,7 +435,7 @@ slice get_task_details(int task_id) method_id {
         throw_if(error_replay, query_id == last_query_id);
 
         (cell _, int is_performer_with_proof) = udict_get_ref?(proof_submission_map, 256, slice_hash(sender_address));
-        throw_if(error_not_performer_or_moderator, (~ slice_equal(sender_address, task_poster_address)) & (~ is_performer_with_proof));
+            throw_if(error_not_performer_or_moderator, (~ slice_equal?(sender_address, task_poster_address)) & (~ is_performer_with_proof));
 
         builder b = begin_cell()
             .store_slice(task_poster_address)
@@ -482,12 +482,12 @@ slice get_task_details(int task_id) method_id {
         cell proof_submission_map = s~load_dict();
         int last_query_id = s~load_uint(64);
 
-        throw_if(error_not_moderator, ~ slice_equal(sender_address, moderator_address));
+        throw_if(error_not_moderator, ~ slice_equal?(sender_address, moderator_address));
         throw_if(error_task_not_in_disputed_state, current_state != STATE_DISPUTED);
         throw_if(error_replay, query_id == last_query_id);
 
         int new_state = STATE_SETTLED;
-        if (slice_equal(winner_address, task_poster_address)) {
+        if (slice_equal?(winner_address, task_poster_address)) {
             cell refund_msg = begin_cell().store_uint(0x18, 6).store_slice(task_poster_address).store_coins(current_total_escrowed_funds).store_uint(0, 1).end_cell();
             send_raw_message(refund_msg, 64);
             current_total_escrowed_funds = 0;
@@ -550,7 +550,7 @@ slice get_task_details(int task_id) method_id {
         cell proof_submission_map = s~load_dict();
         int last_query_id = s~load_uint(64);
 
-        throw_if(error_not_task_poster, ~ slice_equal(sender_address, task_poster_address));
+        throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
         throw_if(error_invalid_state, (current_state != STATE_IDLE) & (current_state != STATE_TASK_SET_AND_FUNDS_PENDING));
         throw_if(error_replay, query_id == last_query_id);
 
@@ -584,7 +584,7 @@ slice get_task_details(int task_id) method_id {
     ;; 9. Withdraw Protocol Fees: Only treasury can withdraw
     ;; ============================================
     } elseif (op == op_withdraw_fee) {
-        throw_if(error_not_owner, ~ slice_equal(sender_address, ziver_treasury_address));
+        throw_if(error_not_owner, ~ slice_equal?(sender_address, ziver_treasury_address));
         throw_if(error_no_accumulated_fees, accumulated_ziver_fees <= 0);
 
         cell withdraw_msg = begin_cell().store_uint(0x18, 6).store_slice(ziver_treasury_address).store_coins(accumulated_ziver_fees).store_uint(0, 1).end_cell();
