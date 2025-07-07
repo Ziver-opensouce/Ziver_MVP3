@@ -5,6 +5,9 @@
 
 #include "imports/stdlib.fc";
 
+;; Helper function to compare two slices
+int slice_equal? (slice a, slice b) asm "SDEQ";
+
 ;; --------------------------------------------
 ;; Error Codes
 ;; --------------------------------------------
@@ -119,9 +122,10 @@ slice get_task_details(int task_id) method_id {
 ;; ============================================
 ;; Internal Message Handler (all logic here)
 ;; ============================================
-() recv_internal() impure {
-    ;; Standard internal message parsing
-    slice in_msg_full = get_in_msg().begin_parse();
+() recv_internal(slice in_msg_full) impure {
+    ;; Now 'in_msg_full' is provided as an argument, so we can use it directly.
+    ;; The following line is no longer needed and should be deleted:
+    ;; slice in_msg_full = get_in_msg().begin_parse(); 
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
     
