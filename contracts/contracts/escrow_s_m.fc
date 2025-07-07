@@ -121,7 +121,7 @@ slice get_task_details(int task_id) method_id {
 ;; ============================================
 () recv_internal() impure {
     ;; Standard internal message parsing
-    slice in_msg_full = in_msg().begin_parse();
+    slice in_msg_full = get_in_msg().begin_parse();
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
     
