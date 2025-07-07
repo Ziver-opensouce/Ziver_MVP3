@@ -105,21 +105,14 @@ int get_accumulated_fees() method_id {
     return accumulated_ziver_fees;
 }
 
-() get_task_details(int task_id) method_id {
+slice get_task_details(int task_id) method_id {
     (_, cell tasks_dict, _) = load_data();
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
     if (~ found) {
-        ;; Instead of returning null, throw an error. This makes the function's
-        ;; return type consistent.
         throw(error_task_not_found);
     }
     slice s = c.begin_parse();
-    ;; Parse the slice and return its contents as a tuple
-    return (
-        s~load_msg_addr(), s~load_coins(), s~load_uint(32), s~load_dict(), s~load_uint(32),
-        s~load_uint(256), s~load_uint(256), s~load_uint(64), s~load_coins(), s~load_uint(8),
-        s~load_msg_addr(), s~load_uint(8), s~load_dict(), s~load_uint(64)
-    );
+    return s;
 }
 
 ;; ============================================
