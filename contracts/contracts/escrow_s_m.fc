@@ -3,61 +3,61 @@
 ;; MVP+ | Auto-Expiry | Event Logs | Security Enhancements | Replay Protection
 ;; ============================================
 
-#include "imports/stdlib.fc"
+#include "imports/stdlib.fc";
 
 ;; --------------------------------------------
 ;; Error Codes
 ;; --------------------------------------------
-int error_not_owner = 100;
-int error_task_already_exists = 101;
-int error_task_not_found = 102;
-int error_not_task_poster = 103;
-int error_invalid_state = 104;
-int error_insufficient_funds = 105;
-int error_task_not_in_active_state = 106;
-int error_invalid_performer_address = 107;
-int error_performer_not_found = 108;
-int error_task_not_pending_verification = 109;
-int error_proof_already_submitted = 110;
-int error_not_performer_or_moderator = 111;
-int error_task_not_in_disputed_state = 112;
-int error_not_moderator = 113;
-int error_no_accumulated_fees = 114;
-int error_expired_task = 115;
-int error_task_not_set_and_funds_pending = 116;
-int error_task_not_in_active_or_pending = 117;
-int error_already_completed_performer = 118;
-int error_not_enough_performers_completed = 119;
-int error_unknown_opcode = 255;
-int error_task_expired = 256;
-int error_replay = 257; ;; Advanced security: replay protection
+const int error_not_owner = 100;
+const int error_task_already_exists = 101;
+const int error_task_not_found = 102;
+const int error_not_task_poster = 103;
+const int error_invalid_state = 104;
+const int error_insufficient_funds = 105;
+const int error_task_not_in_active_state = 106;
+const int error_invalid_performer_address = 107;
+const int error_performer_not_found = 108;
+const int error_task_not_pending_verification = 109;
+const int error_proof_already_submitted = 110;
+const int error_not_performer_or_moderator = 111;
+const int error_task_not_in_disputed_state = 112;
+const int error_not_moderator = 113;
+const int error_no_accumulated_fees = 114;
+const int error_expired_task = 115;
+const int error_task_not_set_and_funds_pending = 116;
+const int error_task_not_in_active_or_pending = 117;
+const int error_already_completed_performer = 118;
+const int error_not_enough_performers_completed = 119;
+const int error_unknown_opcode = 255;
+const int error_task_expired = 256;
+const int error_replay = 257;
 
 ;; --------------------------------------------
 ;; Opcodes
 ;; --------------------------------------------
-int op_deploy = 0x61737467;
-int op_send_task_details = 0x1a2b3c4d;
-int op_deposit_funds = 0x5e6f7a8b;
-int op_verify_task_completion = 0x9c0d1e2f;
-int op_submit_proof = 0x3a4b5c6d;
-int op_raise_dispute = 0x7e8f9a0b;
-int op_resolve_dispute = 0x11223344;
-int op_withdraw_funds = 0x55667788;
-int op_cancel_task_and_refund = 0x99aabbcc;
-int op_withdraw_fee = 0xddccbbaa;
-int op_expire_task = 0xaabbccdd;
+const int op_deploy = 0x61737467;
+const int op_send_task_details = 0x1a2b3c4d;
+const int op_deposit_funds = 0x5e6f7a8b;
+const int op_verify_task_completion = 0x9c0d1e2f;
+const int op_submit_proof = 0x3a4b5c6d;
+const int op_raise_dispute = 0x7e8f9a0b;
+const int op_resolve_dispute = 0x11223344;
+const int op_withdraw_funds = 0x55667788;
+const int op_cancel_task_and_refund = 0x99aabbcc;
+const int op_withdraw_fee = 0xddccbbaa;
+const int op_expire_task = 0xaabbccdd;
 
 ;; --------------------------------------------
 ;; Escrow State Enum
 ;; --------------------------------------------
-int STATE_IDLE = 0;
-int STATE_TASK_SET_AND_FUNDS_PENDING = 1;
-int STATE_ACTIVE = 2;
-int STATE_PENDING_VERIFICATION = 3;
-int STATE_SETTLED = 4;
-int STATE_DISPUTED = 5;
-int STATE_EXPIRED = 6;
-int STATE_REFUNDED = 7;
+const int STATE_IDLE = 0;
+const int STATE_TASK_SET_AND_FUNDS_PENDING = 1;
+const int STATE_ACTIVE = 2;
+const int STATE_PENDING_VERIFICATION = 3;
+const int STATE_SETTLED = 4;
+const int STATE_DISPUTED = 5;
+const int STATE_EXPIRED = 6;
+const int STATE_REFUNDED = 7;
 
 ;; ============================================
 ;; Storage
