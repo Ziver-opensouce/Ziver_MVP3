@@ -88,17 +88,24 @@ const int STATE_REFUNDED = 7;
 ;; ============================================
 () log_event(int event_code, int task_id, int extra) impure {
     ;; event_code: 1=created, 2=completed, 3=expired, 4=disputed, 5=resolved, 6=fees_withdrawn, 7=cancelled
-    log(event_code); log(task_id); log(extra);
+    ;; The 'log' primitive is not standard. Commenting out for compilation.
+    ;; For a production-ready contract, events should be logged via external messages.
 }
 
 ;; ============================================
 ;; Getters (off-chain, view methods)
 ;; ============================================
 slice get_ziver_treasury_address() method_id {
-    (slice ziver_treasury_address, cell _, int _) = load_data();
+    var (ziver_treasury_address, _, _) = load_data();
     return ziver_treasury_address;
 }
-int tuple get_task_details(int task_id) method_id {
+
+int get_accumulated_fees() method_id {
+    var (_, _, accumulated_ziver_fees) = load_data();
+    return accumulated_ziver_fees;
+}
+
+tuple get_task_details(int task_id) method_id {
     (_, cell tasks_dict, _) = load_data();
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
     if (~ found) {
