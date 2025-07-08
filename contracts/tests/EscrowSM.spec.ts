@@ -13,27 +13,27 @@ describe('EscrowSM', () => {
     let performer2: SandboxContract<TreasuryContract>;
     let moderator: SandboxContract<TreasuryContract>;
 
-    // The beforeEach block is updated to correctly initialize the contract for testing.
     beforeEach(async () => {
         blockchain = await Blockchain.create();
         deployer = await blockchain.treasury('deployer');
         ziverTreasury = await blockchain.treasury('ziverTreasury');
 
-        // 1. The initial data object now includes `accumulatedFees` to match the wrapper's type definition.
         const initialData: EscrowSMData = {
             tasks: Dictionary.empty(),
             ziverTreasuryAddress: ziverTreasury.address,
             accumulatedFees: 0n,
         };
 
-        // 2. We use the corrected `createFromConfig` method from the wrapper to instantiate the contract.
-        // This is the main fix for the "Type 'never' has no call signatures" error.
-        escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData));
+        escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData, null));
 
-        // Deploy the contract
-        await escrowSM.sendDeploy(deployer.getSender(), toNano('0.05'));
+        const deployResult = await escrowSM.sendDeploy(deployer.getSender(), toNano('0.05'));
+        expect(deployResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: escrowSM.address,
+            deploy: true,
+            success: true,
+        });
 
-        // Initialize user wallets
         taskPoster = await blockchain.treasury('taskPoster');
         performer1 = await blockchain.treasury('performer1');
         performer2 = await blockchain.treasury('performer2');
@@ -41,7 +41,7 @@ describe('EscrowSM', () => {
     });
 
     it('should deploy and have correct initial data', async () => {
-        expect((await escrowSM.getZiverTreasuryAddress()).toString()).toEqual(ziverTreasury.address.toString());
+        expect((await escrowSM.getZiverTreasuryAddress()).equals(ziverTreasury.address)).toBe(true);
         expect(await escrowSM.getAccumulatedFees()).toEqual(0n);
     });
 
@@ -49,10 +49,10 @@ describe('EscrowSM', () => {
         const taskId = 1001n;
         const payment = toNano('2');
         const nPerformers = 1n;
-        // Set expiry to be very short for the test
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 2);
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: nPerformers,
@@ -61,17 +61,15 @@ describe('EscrowSM', () => {
             expiryTimestamp: expiry,
             ziverFeePercentage: 5n,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 1n,
         });
 
         let td = await escrowSM.getTaskDetails(taskId);
-        // LOGIC FIX: After setting details, the state should be Pending, not Idle.
         expect(td?.currentState).toEqual(EscrowState.TaskSetAndFundsPending);
 
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment + toNano('0.05'),
             queryID: 2n,
         });
 
@@ -79,12 +77,11 @@ describe('EscrowSM', () => {
         expect(td?.totalEscrowedFunds).toEqual(payment);
         expect(td?.currentState).toEqual(EscrowState.Active);
 
-        // Wait for the contract to expire
         await blockchain.setUnixTime(Number(expiry) + 1);
 
-        await escrowSM.sendExpireTask(performer1.getSender(), {
+        await escrowSM.send(performer1.getSender(), { value: toNano('0.05') }, {
+            $$type: 'ExpireTask',
             taskId,
-            value: toNano('0.05'),
             queryID: 3n,
         });
 
@@ -98,7 +95,8 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: 1n,
@@ -107,24 +105,22 @@ describe('EscrowSM', () => {
             expiryTimestamp: expiry,
             ziverFeePercentage: 5n,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 10n,
         });
 
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment + toNano('0.05'),
             queryID: 11n,
         });
 
-        // This call should fail because queryID 11n has already been used.
         await expect(
-            escrowSM.sendDepositFunds(taskPoster.getSender(), {
+            escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, {
+                $$type: 'DepositFunds',
                 taskId,
-                value: payment + toNano('0.05'),
                 queryID: 11n,
             })
-        ).rejects.toThrow(); // We can check for a generic throw or a specific exit code.
+        ).rejects.toThrow();
     });
 
     it('should complete task and accumulate fees', async () => {
@@ -133,7 +129,8 @@ describe('EscrowSM', () => {
         const feePct = 10n;
         const fee = (payment * feePct) / 100n;
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: 1n,
@@ -142,29 +139,27 @@ describe('EscrowSM', () => {
             expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
             ziverFeePercentage: feePct,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 21n,
         });
 
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment + toNano('0.05'),
             queryID: 22n,
         });
 
         const performer1BalBefore = await performer1.getBalance();
 
-        await escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'VerifyTaskCompletion',
             taskId,
             performerAddress: performer1.address,
-            value: toNano('0.05'),
             queryID: 23n,
         });
 
         const performer1BalAfter = await performer1.getBalance();
         const expectedPayout = payment - fee;
 
-        // Check that the performer received the payout (accounting for gas)
         expect(performer1BalAfter - performer1BalBefore).toBeGreaterThan(expectedPayout - toNano('0.05'));
         expect(await escrowSM.getAccumulatedFees()).toEqual(fee);
     });
@@ -174,7 +169,8 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
         const nPerformers = 2n;
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: nPerformers,
@@ -183,30 +179,29 @@ describe('EscrowSM', () => {
             expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
             ziverFeePercentage: 10n,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 101n,
         });
 
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment * nPerformers + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment * nPerformers + toNano('0.05'),
             queryID: 102n,
         });
 
-        await escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'VerifyTaskCompletion',
             taskId,
             performerAddress: performer1.address,
-            value: toNano('0.05'),
             queryID: 103n,
         });
 
         let td = await escrowSM.getTaskDetails(taskId);
         expect(td?.currentState).toEqual(EscrowState.PendingVerification);
 
-        await escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'VerifyTaskCompletion',
             taskId,
             performerAddress: performer2.address,
-            value: toNano('0.05'),
             queryID: 104n,
         });
 
@@ -221,8 +216,8 @@ describe('EscrowSM', () => {
         const feePct = 10n;
         const fee = (payment * feePct) / 100n;
 
-        // Setup and complete a task to generate fees
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: 1n,
@@ -231,26 +226,24 @@ describe('EscrowSM', () => {
             expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
             ziverFeePercentage: feePct,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 31n,
         });
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment + toNano('0.05'),
             queryID: 32n,
         });
-        await escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'VerifyTaskCompletion',
             taskId,
             performerAddress: performer1.address,
-            value: toNano('0.05'),
             queryID: 33n,
         });
         expect(await escrowSM.getAccumulatedFees()).toEqual(fee);
 
-        // Withdraw the fees
         const treasuryBalBefore = await ziverTreasury.getBalance();
-        await escrowSM.sendWithdrawFee(ziverTreasury.getSender(), {
-            value: toNano('0.05'),
+        await escrowSM.send(ziverTreasury.getSender(), { value: toNano('0.05') }, {
+            $$type: 'WithdrawFee',
             queryID: 34n,
         });
 
@@ -263,7 +256,8 @@ describe('EscrowSM', () => {
         const taskId = 4001n;
         const payment = toNano('1');
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: 1n,
@@ -272,32 +266,31 @@ describe('EscrowSM', () => {
             expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
             ziverFeePercentage: 5n,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 41n,
         });
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment + toNano('0.05'),
             queryID: 42n,
         });
-        await escrowSM.sendSubmitProof(performer1.getSender(), {
+        await escrowSM.send(performer1.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SubmitProof',
             taskId,
             proofHash: 123n,
-            value: toNano('0.05'),
             queryID: 43n,
         });
-        await escrowSM.sendRaiseDispute(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'RaiseDispute',
             taskId,
-            value: toNano('0.05'),
             queryID: 44n,
         });
         let td = await escrowSM.getTaskDetails(taskId);
         expect(td?.currentState).toEqual(EscrowState.Disputed);
 
-        await escrowSM.sendResolveDispute(moderator.getSender(), {
+        await escrowSM.send(moderator.getSender(), { value: toNano('0.05') }, {
+            $$type: 'ResolveDispute',
             taskId,
             winnerAddress: performer1.address,
-            value: toNano('0.05'),
             queryID: 45n,
         });
 
@@ -309,7 +302,8 @@ describe('EscrowSM', () => {
         const taskId = 5001n;
         const payment = toNano('2');
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'SetTaskDetails',
             taskId,
             paymentPerPerformerAmount: payment,
             numberOfPerformersNeeded: 1n,
@@ -318,20 +312,18 @@ describe('EscrowSM', () => {
             expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600),
             ziverFeePercentage: 2n,
             moderatorAddress: moderator.address,
-            value: toNano('0.05'),
             queryID: 51n,
         });
 
-        // Poster makes a partial deposit but doesn't fully fund the task.
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: payment / 2n + toNano('0.05') }, {
+            $$type: 'DepositFunds',
             taskId,
-            value: payment / 2n + toNano('0.05'),
             queryID: 52n,
         });
 
-        await escrowSM.sendCancelTaskAndRefund(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'CancelTaskAndRefund',
             taskId,
-            value: toNano('0.05'),
             queryID: 53n,
         });
 
@@ -346,15 +338,14 @@ describe('EscrowSM', () => {
         const taskId = 6001n;
         const payment = toNano('1');
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), { taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, value: toNano('0.05'), queryID: 61n });
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), { taskId, value: payment + toNano('0.05'), queryID: 62n });
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 61n });
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, { $$type: 'DepositFunds', taskId, queryID: 62n });
 
-        // A different performer tries to verify, which should fail.
         await expect(
-            escrowSM.sendVerifyTaskCompletion(performer2.getSender(), {
+            escrowSM.send(performer2.getSender(), { value: toNano('0.05') }, {
+                $$type: 'VerifyTaskCompletion',
                 taskId,
                 performerAddress: performer1.address,
-                value: toNano('0.05'),
                 queryID: 63n,
             })
         ).rejects.toThrow();
@@ -363,16 +354,14 @@ describe('EscrowSM', () => {
     it('should REJECT fee withdrawal from a non-treasury address', async () => {
         const taskId = 7001n;
         const payment = toNano('1');
-        
-        // Setup a task that generates a fee
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), { taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 10n, moderatorAddress: moderator.address, value: toNano('0.05'), queryID: 71n });
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), { taskId, value: payment + toNano('0.05'), queryID: 72n });
-        await escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), { taskId, performerAddress: performer1.address, value: toNano('0.05'), queryID: 73n });
 
-        // The task poster (not the treasury) tries to withdraw, which should fail.
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 10n, moderatorAddress: moderator.address, queryID: 71n });
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, { $$type: 'DepositFunds', taskId, queryID: 72n });
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'VerifyTaskCompletion', taskId, performerAddress: performer1.address, queryID: 73n });
+
         await expect(
-            escrowSM.sendWithdrawFee(taskPoster.getSender(), {
-                value: toNano('0.05'),
+            escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+                $$type: 'WithdrawFee',
                 queryID: 74n,
             })
         ).rejects.toThrow();
@@ -382,16 +371,15 @@ describe('EscrowSM', () => {
         const taskId = 8001n;
         const payment = toNano('1');
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), { taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 2n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, value: toNano('0.05'), queryID: 81n });
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), { taskId, value: payment * 2n + toNano('0.05'), queryID: 82n });
-        await escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), { taskId, performerAddress: performer1.address, value: toNano('0.05'), queryID: 83n });
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 2n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 81n });
+        await escrowSM.send(taskPoster.getSender(), { value: payment * 2n + toNano('0.05') }, { $$type: 'DepositFunds', taskId, queryID: 82n });
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'VerifyTaskCompletion', taskId, performerAddress: performer1.address, queryID: 83n });
 
-        // Trying to verify the same performer again should fail.
         await expect(
-            escrowSM.sendVerifyTaskCompletion(taskPoster.getSender(), {
+            escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+                $$type: 'VerifyTaskCompletion',
                 taskId,
                 performerAddress: performer1.address,
-                value: toNano('0.05'),
                 queryID: 84n,
             })
         ).rejects.toThrow();
@@ -401,21 +389,22 @@ describe('EscrowSM', () => {
         const taskId = 9001n;
         const payment = toNano('5');
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), { taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, value: toNano('0.05'), queryID: 91n });
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 91n });
 
         const posterBalanceBefore = await taskPoster.getBalance();
         const overpaymentAmount = toNano('2');
 
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), {
-            taskId,
+        await escrowSM.send(taskPoster.getSender(), {
             value: payment + overpaymentAmount + toNano('0.05'),
+        }, {
+            $$type: 'DepositFunds',
+            taskId,
             queryID: 92n,
         });
 
         const posterBalanceAfter = await taskPoster.getBalance();
         const maxExpectedCost = payment + toNano('0.05');
 
-        // The balance change should be less than if the overpayment was kept.
         expect(posterBalanceBefore - posterBalanceAfter).toBeLessThan(maxExpectedCost + overpaymentAmount);
         expect(posterBalanceBefore - posterBalanceAfter).toBeGreaterThan(maxExpectedCost - toNano('0.01'));
 
@@ -427,21 +416,21 @@ describe('EscrowSM', () => {
         const taskId = 4002n;
         const payment = toNano('1');
 
-        await escrowSM.sendSetTaskDetails(taskPoster.getSender(), { taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, value: toNano('0.05'), queryID: 91n });
-        await escrowSM.sendDepositFunds(taskPoster.getSender(), { taskId, value: payment + toNano('0.05'), queryID: 92n });
-        await escrowSM.sendSubmitProof(performer1.getSender(), { taskId, proofHash: 123n, value: toNano('0.05'), queryID: 93n });
-        await escrowSM.sendRaiseDispute(taskPoster.getSender(), {
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 91n });
+        await escrowSM.send(taskPoster.getSender(), { value: payment + toNano('0.05') }, { $$type: 'DepositFunds', taskId, queryID: 92n });
+        await escrowSM.send(performer1.getSender(), { value: toNano('0.05') }, { $$type: 'SubmitProof', taskId, proofHash: 123n, queryID: 93n });
+        await escrowSM.send(taskPoster.getSender(), { value: toNano('0.05') }, {
+            $$type: 'RaiseDispute',
             taskId,
-            value: toNano('0.05'),
             queryID: 94n,
         });
 
         const posterBalanceBefore = await taskPoster.getBalance();
 
-        await escrowSM.sendResolveDispute(moderator.getSender(), {
+        await escrowSM.send(moderator.getSender(), { value: toNano('0.05') }, {
+            $$type: 'ResolveDispute',
             taskId,
             winnerAddress: taskPoster.address,
-            value: toNano('0.05'),
             queryID: 95n,
         });
 
@@ -450,8 +439,6 @@ describe('EscrowSM', () => {
         expect(td?.totalEscrowedFunds).toEqual(0n);
 
         const posterBalanceAfter = await taskPoster.getBalance();
-        // Poster's balance should increase as they got the escrowed funds back.
         expect(posterBalanceAfter).toBeGreaterThan(posterBalanceBefore);
     });
 });
-
