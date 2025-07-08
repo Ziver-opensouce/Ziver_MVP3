@@ -19,7 +19,7 @@ export async function run(provider: NetworkProvider) {
     const escrowSM = provider.open(EscrowSM.fromInit(initialData));
 
     // Check if the contract is already deployed
-    const isDeployed = await provider.is=="(escrowSM.address);
+    const isDeployed = await provider.isDeployed(escrowSM.address);
     if (isDeployed) {
         console.log(`Contract already deployed at address: ${escrowSM.address.toString()}`);
         return;
