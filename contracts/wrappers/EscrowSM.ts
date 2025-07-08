@@ -198,16 +198,19 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendWithdrawFee( provider: ContractProvider, via: Sender, opts: { value: bigint; queryID?: bigint; }) {
-        await provider.internal(via, {
-            value: opts.value,
-            sendMode: SendMode.PAY_GAS_SEparately,
-            body: beginCell()
-                .storeUint(Opcodes.withdrawFee, 32)
-                .storeUint(opts.queryID ?? 0, 64)
-                .endCell(),
-        });
-    }
+    // In wrappers/EscrowSM.ts
+
+async sendWithdrawFee( provider: ContractProvider, via: Sender, opts: { value: bigint; queryID?: bigint; }) {
+    await provider.internal(via, {
+        value: opts.value,
+        // FIX: Correct the typo from 'SEparately' to 'SEPARATELY'
+        sendMode: SendMode.PAY_GAS_SEPARATELY, 
+        body: beginCell()
+            .storeUint(Opcodes.withdrawFee, 32)
+            .storeUint(opts.queryID ?? 0, 64)
+            .endCell(),
+    });
+}
 
     async sendExpireTask( provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint; }) {
         await provider.internal(via, {
