@@ -10,29 +10,14 @@ import {
     Sender,
     SendMode,
     Slice,
-    TupleReader,
     toNano // It's good practice to have this for getters that might return amounts
 } from '@ton/core';
 
-// --- Dictionary resolvers for performerCompleted and proofSubmissionMap ---
-// (Your resolvers are fine, no changes needed here)
-const performerCompletedKeyResolver = {
-    serialize: (src: bigint, builder: Builder) => { builder.storeUint(src, 256); },
-    parse: (src: Slice) => src.loadUint(256)
-};
-const performerCompletedValueResolver = {
+// --- Dictionary value resolvers ---
+const dictionaryValueResolver = {
     serialize: (src: Cell, builder: Builder) => { builder.storeRef(src); },
     parse: (src: Slice) => src.loadRef()
 };
-const proofSubmissionMapKeyResolver = {
-    serialize: (src: bigint, builder: Builder) => { builder.storeUint(src, 256); },
-    parse: (src: Slice) => src.loadUint(256)
-};
-const proofSubmissionMapValueResolver = {
-    serialize: (src: Cell, builder: Builder) => { builder.storeRef(src); },
-    parse: (src: Slice) => src.loadRef()
-};
-
 
 // --- Escrow State Enum ---
 export enum EscrowState {
@@ -47,6 +32,7 @@ export enum EscrowState {
 }
 
 // --- Task Details Type ---
+// This is a helper type for your tests, representing the structure returned by a getter method.
 export type TaskDetails = {
     taskId: bigint;
     taskPosterAddress: Address;
@@ -65,22 +51,23 @@ export type TaskDetails = {
     lastQueryId: bigint;
 };
 
-// --- Overall Contract State Type ---
+// --- Overall Contract Storage Data Type ---
 export type EscrowSMData = {
-    tasks: Dictionary<bigint, Cell>; // Use the Dictionary type for clarity
+    tasks: Dictionary<bigint, Cell>;
     ziverTreasuryAddress: Address;
+    // It's good practice to include all storage fields
+    accumulatedFees: bigint;
 };
 
 // --- Opcodes ---
 export const Opcodes = {
-    //deploy: 0x61737467, // Deploy doesn't need a specific opcode in the body
     setTaskDetails: 0x1a2b3c4d,
     depositFunds: 0x5e6f7a8b,
     verifyTaskCompletion: 0x9c0d1e2f,
     submitProof: 0x3a4b5c6d,
     raiseDispute: 0x7e8f9a0b,
     resolveDispute: 0x11223344,
-    withdrawFunds: 0x55667788,
+    withdrawFunds: 0x55667788, // This seems unused in your tests, but keeping it.
     cancelTaskAndRefund: 0x99aabbcc,
     withdrawFee: 0xddccbbaa,
     expireTask: 0xaabbccdd
@@ -88,44 +75,60 @@ export const Opcodes = {
 
 // --- Main Contract Wrapper ---
 export class EscrowSM implements Contract {
-    // ==================================================================
-    // START OF CORRECTED SECTION
-    // ==================================================================
-    
-    // Use the compiled code from your build folder
-    static readonly code = Cell.fromBase64('te6ccgECIAEAA7QAAgE0BAEBAgGUAA4AART/APSkE/S88sgLAQIBIAIDAgEgBgcCASAKCwAYABhISEBAXv+ABwADgAsACgANAA4ACABG32omhAEGuQ641I41JvQC+78M8wAbBwwA49ma0DDsA49ma0DDsAgEgDA0AEb4AIBIBEQAgEgERIATvhAAm+EABc+EACf+EADBvhABE/4AIGH+EAFf+EACd8QAGf+EAAnfhAgAwNvbW1sZW50czogcmVwbGF5IGF0dGFjayBwcm90ZWN0aW9uDwAVCgFPINdJ0CDXMdAnIP8v/y8AINch0IGHINdJ0CHXMdAn1DDTAAkkAB8ADgAQABIAEAANADAAZgAnADEAOwA+ADUANgAzADkAECASAQDgAJvhi+EABfhi+EACf8QAMfhi+EACKn/FAAk4+EACaF+ECAAg8AcgAh8AcgAcf9QB+gD6APpA+gD6QB8A0/UAfTP/1AE1+gD6QPpA+gD6QPoA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APoA+gD6QPpA+gD6QPpA+gD6APpA+kDd');
+    // This holds the compiled code of your smart contract.
+    // It's generated when you run `npx blueprint build`.
+    static readonly code = Cell.fromBase64('te6ccgECIAEAA7QAAgE0BAEBAgGUAA4AART/APSkE/S88sgLAQIBIAIDAgEgBgcCASAKCwAYABhISEBAXv+ABwADgAsACgANAA4ACABG32omhAEGuQ641I41JvQC+78M8wAbBwwA49ma0DDsA49ma0DDsAgEgDA0AEb4AIBIBEQAgEgERIATvhAAm+EABc+EACf+EADBvhABE/4AIGH+EAFf+EACd8QAGf+EAAnfhAgAwNvbW1sZW50czogcmVwbGF5IGF0dGFjayBwcm90ZWN0aW9uDwAVCgFPINdJ0CDXMdAnIP8v/y8AINch0IGHINdJ0CHXMdAn1DDTAAkkAB8ADgAQABIAEAANADAAZgAnADEAOwA+ADUANgAzADkAECASAQDgAJvhi+EABfhi+EACf8QAMfhi+EACKn/FAAk4+EACaF+ECAAg8AcgAh8AcgAcf9QB+gD6APpA+gD6QB8A0/UAfTP/1AE1+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APoA+gD6QPpA+gD6QPpA+gD6APpA+kDd');
 
+    /**
+     * Creates a contract instance from a given address.
+     * @param address The address of the smart contract.
+     * @returns A new instance of the EscrowSM contract.
+     */
     static createFromAddress(address: Address) {
         return new EscrowSM(address);
     }
-
-    static async fromInit(initialData: EscrowSMData) {
-        const data = beginCell()
+    
+    /**
+     * Creates the initial data cell for contract deployment.
+     * @param initialData The initial state of the contract.
+     * @returns A Cell representing the contract's initial data.
+     */
+    static createDataCell(initialData: EscrowSMData): Cell {
+        return beginCell()
             .storeDict(initialData.tasks)
             .storeAddress(initialData.ziverTreasuryAddress)
+            .storeCoins(initialData.accumulatedFees)
             .endCell();
-        const init = { code: this.code, data };
-        return new EscrowSM(contractAddress(0, init), init);
     }
     
+    /**
+     * Creates a contract instance from its initial data.
+     * This is used for deploying a new contract.
+     * @param initialData The initial data for the contract.
+     * @param workchain The workchain ID (usually 0).
+     * @returns A new instance of the EscrowSM contract, ready for deployment.
+     */
+    static async createFromConfig(initialData: EscrowSMData, workchain: number = 0) {
+        const data = this.createDataCell(initialData);
+        const init = { code: this.code, data };
+        const address = contractAddress(workchain, init);
+        
+        // This is the key fix: we instantiate and return the class.
+        return new EscrowSM(address, init);
+    }
+
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
-
-    // ==================================================================
-    // END OF CORRECTED SECTION
-    // ==================================================================
-
 
     async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
         await provider.internal(via, {
             value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell().endCell(), // Deploy body is typically empty
+            body: beginCell().endCell(),
         });
     }
 
-    // --- Contract Message Methods ---
-    // (The rest of your send... and get... methods are correct and do not need changes)
-    
+    // --- Contract Message (send) Methods ---
+
     async sendSetTaskDetails(
         provider: ContractProvider,
         via: Sender,
@@ -160,7 +163,6 @@ export class EscrowSM implements Contract {
         });
     }
 
-    // ... [ The rest of your send... and get... methods go here unchanged ]
     async sendDepositFunds(
         provider: ContractProvider,
         via: Sender,
@@ -267,26 +269,6 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendWithdrawFunds(
-        provider: ContractProvider,
-        via: Sender,
-        opts: {
-            taskId: bigint;
-            value: bigint;
-            queryID?: bigint;
-        }
-    ) {
-        await provider.internal(via, {
-            value: opts.value,
-            sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell()
-                .storeUint(Opcodes.withdrawFunds, 32)
-                .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64)
-                .endCell(),
-        });
-    }
-
     async sendCancelTaskAndRefund(
         provider: ContractProvider,
         via: Sender,
@@ -345,41 +327,68 @@ export class EscrowSM implements Contract {
         });
     }
 
+    // --- Getter (get) Methods ---
+    
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
         const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
-        // Add robust parsing to avoid crashes on empty results
-        if (result.stack.remaining === 0) {
+        
+        if (result.stack.remaining < 10) { // Check if there are enough elements to read
             return null;
         }
+        
+        // Use a TupleReader for safer parsing
         const reader = result.stack;
         
+        // We read in the order the FunC method returns the values
+        const taskPosterAddress = reader.readAddress();
+        const paymentPerPerformerAmount = reader.readBigNumber();
+        const numberOfPerformersNeeded = reader.readBigNumber();
+        const performersCompletedCell = reader.readCellOpt();
+        const completedPerformersCount = reader.readBigNumber();
+        const taskDescriptionHash = reader.readBigNumber();
+        const taskGoalHash = reader.readBigNumber();
+        const expiryTimestamp = reader.readBigNumber();
+        const totalEscrowedFunds = reader.readBigNumber();
+        const ziverFeePercentage = reader.readBigNumber();
+        const moderatorAddress = reader.readAddress();
+        const currentState = reader.readNumber();
+        const proofSubmissionMapCell = reader.readCellOpt();
+        const lastQueryId = reader.readBigNumber();
+
+        const performersCompleted = performersCompletedCell 
+            ? performersCompletedCell.asDict(Dictionary.Keys.BigUint(256), dictionaryValueResolver)
+            : Dictionary.empty(Dictionary.Keys.BigUint(256), dictionaryValueResolver);
+
+        const proofSubmissionMap = proofSubmissionMapCell
+            ? proofSubmissionMapCell.asDict(Dictionary.Keys.BigUint(256), dictionaryValueResolver)
+            : Dictionary.empty(Dictionary.Keys.BigUint(256), dictionaryValueResolver);
+
         return {
-            taskId: taskId,
-            taskPosterAddress: reader.readAddress(),
-            paymentPerPerformerAmount: reader.readBigNumber(),
-            numberOfPerformersNeeded: reader.readBigNumber(),
-            performersCompleted: reader.readCell().asDict(performerCompletedKeyResolver, performerCompletedValueResolver),
-            completedPerformersCount: reader.readBigNumber(),
-            taskDescriptionHash: reader.readBigNumber(),
-            taskGoalHash: reader.readBigNumber(),
-            expiryTimestamp: reader.readBigNumber(),
-            totalEscrowedFunds: reader.readBigNumber(),
-            ziverFeePercentage: reader.readBigNumber(),
-            moderatorAddress: reader.readAddress(),
-            currentState: reader.readNumber(),
-            proofSubmissionMap: reader.readCell().asDict(proofSubmissionMapKeyResolver, proofSubmissionMapValueResolver),
-            lastQueryId: reader.readBigNumber(),
+            taskId,
+            taskPosterAddress,
+            paymentPerPerformerAmount,
+            numberOfPerformersNeeded,
+            performersCompleted,
+            completedPerformersCount,
+            taskDescriptionHash,
+            taskGoalHash,
+            expiryTimestamp,
+            totalEscrowedFunds,
+            ziverFeePercentage,
+            moderatorAddress,
+            currentState,
+            proofSubmissionMap,
+            lastQueryId,
         };
     }
-    
+
     async getZiverTreasuryAddress(provider: ContractProvider): Promise<Address> {
         const { stack } = await provider.get('get_ziver_treasury_address', []);
         return stack.readAddress();
     }
-    
+
     async getAccumulatedFees(provider: ContractProvider): Promise<bigint> {
         const { stack } = await provider.get('get_accumulated_fees', []);
         return stack.readBigNumber();
     }
 }
-
