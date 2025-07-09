@@ -106,7 +106,7 @@ FAIL tests/EscrowSM.spec.ts
 Test Suites: 1 failed, 1 total
 Tests:       0 total
 Snapshots:   0 total
-Time:        0.399 s
+Time:        0.447 s
 Ran all test suites.
 Error: Command failed: npm test
     at checkExecSyncError (node:child_process:890:11)
@@ -116,7 +116,7 @@ Error: Command failed: npm test
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 89024,
+  pid: 2010,
   stdout: null,
   stderr: null
 }
