@@ -1,416 +1,122 @@
 
-> contracts@0.0.1 test
+> ziver-mvp@0.0.1 test
 > jest --verbose
 
 FAIL tests/EscrowSM.spec.ts
   ● Test suite failed to run
 
-    [96mtests/EscrowSM.spec.ts[0m:[93m59[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m59[0m                 $$type: 'SetTaskDetails',
-    [7m  [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m78[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m78[0m             body: { $$type: 'DepositFunds', taskId, queryID: 2n }
-    [7m  [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m85[0m:[93m26[0m - [91merror[0m[90m TS2339: [0mProperty 'setUnixTime' does not exist on type 'Blockchain'.
-
-    [7m85[0m         await blockchain.setUnixTime(Number(expiry) + 1);
-    [7m  [0m [91m                         ~~~~~~~~~~~[0m
-    [96mtests/EscrowSM.spec.ts[0m:[93m90[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m90[0m             body: { $$type: 'ExpireTask', taskId, queryID: 3n }
-    [7m  [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m107[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m107[0m                 $$type: 'SetTaskDetails',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m123[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m123[0m             body: { $$type: 'DepositFunds', taskId, queryID: 11n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m130[0m:[93m25[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m130[0m                 body: { $$type: 'DepositFunds', taskId, queryID: 11n }
-    [7m   [0m [91m                        ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m145[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m145[0m                 $$type: 'SetTaskDetails',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m161[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m161[0m             body: { $$type: 'DepositFunds', taskId, queryID: 22n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m170[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m170[0m                 $$type: 'VerifyTaskCompletion',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m193[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m193[0m                 $$type: 'SetTaskDetails',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m209[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m209[0m             body: { $$type: 'DepositFunds', taskId, queryID: 102n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m216[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m216[0m                 $$type: 'VerifyTaskCompletion',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m230[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m230[0m                 $$type: 'VerifyTaskCompletion',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m252[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m252[0m                 $$type: 'SetTaskDetails',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m267[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m267[0m             body: { $$type: 'DepositFunds', taskId, queryID: 32n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m273[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m273[0m                 $$type: 'VerifyTaskCompletion',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m285[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m285[0m             body: { $$type: 'WithdrawFee', queryID: 34n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m301[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m301[0m                 $$type: 'SetTaskDetails',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m316[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m316[0m             body: { $$type: 'DepositFunds', taskId, queryID: 42n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m321[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m321[0m             body: { $$type: 'SubmitProof', taskId, proofHash: 123n, queryID: 43n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m326[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m326[0m             body: { $$type: 'RaiseDispute', taskId, queryID: 44n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m335[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m335[0m                 $$type: 'ResolveDispute',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m354[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m354[0m                 $$type: 'SetTaskDetails',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m370[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m370[0m             body: { $$type: 'DepositFunds', taskId, queryID: 52n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m376[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m376[0m             body: { $$type: 'CancelTaskAndRefund', taskId, queryID: 53n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m390[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m390[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 61n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m391[0m:[93m96[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m391[0m         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: { $$type: 'DepositFunds', taskId, queryID: 62n } });
-    [7m   [0m [91m                                                                                               ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m398[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m398[0m                     $$type: 'VerifyTaskCompletion',
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m411[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m411[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 10n, moderatorAddress: moderator.address, queryID: 71n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m412[0m:[93m96[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m412[0m         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: { $$type: 'DepositFunds', taskId, queryID: 72n } });
-    [7m   [0m [91m                                                                                               ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m413[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m413[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'VerifyTaskCompletion', taskId, performerAddress: performer1.address, queryID: 73n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m419[0m:[93m25[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m419[0m                 body: { $$type: 'WithdrawFee', queryID: 74n }
-    [7m   [0m [91m                        ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m428[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m428[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 2n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 81n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m429[0m:[93m101[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m429[0m         await taskPoster.send({ to: escrowSM.address, value: payment * 2n + toNano('0.05'), body: { $$type: 'DepositFunds', taskId, queryID: 82n } });
-    [7m   [0m [91m                                                                                                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m430[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m430[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'VerifyTaskCompletion', taskId, performerAddress: performer1.address, queryID: 83n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m437[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m437[0m                     $$type: 'VerifyTaskCompletion',
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m450[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m450[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 91n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m458[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m458[0m             body: { $$type: 'DepositFunds', taskId, queryID: 92n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m475[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m475[0m         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'SetTaskDetails', taskId, paymentPerPerformerAmount: payment, numberOfPerformersNeeded: 1n, expiryTimestamp: BigInt(Math.floor(Date.now() / 1000) + 3600), ziverFeePercentage: 5n, moderatorAddress: moderator.address, queryID: 91n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m476[0m:[93m96[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m476[0m         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: { $$type: 'DepositFunds', taskId, queryID: 92n } });
-    [7m   [0m [91m                                                                                               ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m477[0m:[93m86[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m477[0m         await performer1.send({ to: escrowSM.address, value: toNano('0.05'), body: { $$type: 'SubmitProof', taskId, proofHash: 123n, queryID: 93n } });
-    [7m   [0m [91m                                                                                     ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m481[0m:[93m21[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m481[0m             body: { $$type: 'RaiseDispute', taskId, queryID: 94n }
-    [7m   [0m [91m                    ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
-    [96mtests/EscrowSM.spec.ts[0m:[93m490[0m:[93m17[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but '$$type' does not exist in type 'Cell'. Did you mean to write 'type'?
-
-    [7m490[0m                 $$type: 'ResolveDispute',
-    [7m   [0m [91m                ~~~~~~[0m
-
-      [96mnode_modules/@ton/core/dist/contract/Sender.d.ts[0m:[93m19[0m:[93m5[0m
-        [7m19[0m     body?: Maybe<Cell>;
-        [7m  [0m [96m    ~~~~[0m
-        The expected type comes from property 'body' which is declared here on type 'SenderArguments'
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     • If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     • If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     • To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     • If you need a custom transformation specify a "transform" option in your config.
+     • If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    SyntaxError: /workspaces/Ziver_MVP/contracts/tests/EscrowSM.spec.ts: Missing semicolon. (7:18)
+
+       5 |
+       6 | describe('EscrowSM', () => {
+    >  7 |     let blockchain: Blockchain;
+         |                   ^
+       8 |     let deployer: SandboxContract<TreasuryContract>;
+       9 |     let escrowSM: SandboxContract<EscrowSM>;
+      10 |     let ziverTreasury: SandboxContract<TreasuryContract>;
+
+      at constructor (node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at Parser.toParseError [as raise] (node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+      at Parser.raise [as semicolon] (node_modules/@babel/parser/src/parser/util.ts:149:10)
+      at Parser.semicolon [as parseVarStatement] (node_modules/@babel/parser/src/parser/statement.ts:1247:10)
+      at Parser.parseVarStatement [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:607:21)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:477:17)
+      at Parser.parseStatementLike [as parseStatementListItem] (node_modules/@babel/parser/src/parser/statement.ts:426:17)
+      at Parser.parseStatementListItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1439:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+      at Parser.parseBlockBody [as parseBlock] (node_modules/@babel/parser/src/parser/statement.ts:1380:10)
+      at Parser.parseBlock [as parseFunctionBody] (node_modules/@babel/parser/src/parser/expression.ts:2616:24)
+      at Parser.parseFunctionBody [as parseArrowExpression] (node_modules/@babel/parser/src/parser/expression.ts:2553:10)
+      at Parser.parseArrowExpression [as parseParenAndDistinguishExpression] (node_modules/@babel/parser/src/parser/expression.ts:1837:12)
+      at Parser.parseParenAndDistinguishExpression [as parseExprAtom] (node_modules/@babel/parser/src/parser/expression.ts:1162:21)
+      at Parser.parseExprAtom [as parseExprSubscripts] (node_modules/@babel/parser/src/parser/expression.ts:734:23)
+      at Parser.parseExprSubscripts [as parseUpdate] (node_modules/@babel/parser/src/parser/expression.ts:713:21)
+      at Parser.parseUpdate [as parseMaybeUnary] (node_modules/@babel/parser/src/parser/expression.ts:675:23)
+      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (node_modules/@babel/parser/src/parser/expression.ts:409:14)
+      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (node_modules/@babel/parser/src/parser/expression.ts:421:23)
+      at Parser.parseExprOps [as parseMaybeConditional] (node_modules/@babel/parser/src/parser/expression.ts:376:23)
+      at Parser.parseMaybeConditional [as parseMaybeAssign] (node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at parseMaybeAssign (node_modules/@babel/parser/src/parser/expression.ts:257:12)
+      at Parser.callback [as allowInAnd] (node_modules/@babel/parser/src/parser/expression.ts:3192:12)
+      at Parser.allowInAnd [as parseMaybeAssignAllowIn] (node_modules/@babel/parser/src/parser/expression.ts:256:17)
+      at Parser.parseMaybeAssignAllowIn [as parseMaybeAssignAllowInOrVoidPattern] (node_modules/@babel/parser/src/parser/expression.ts:3306:17)
+      at Parser.parseMaybeAssignAllowInOrVoidPattern [as parseExprListItem] (node_modules/@babel/parser/src/parser/expression.ts:2788:18)
+      at Parser.parseExprListItem [as parseCallExpressionArguments] (node_modules/@babel/parser/src/parser/expression.ts:1034:14)
+      at Parser.parseCallExpressionArguments [as parseCoverCallAndAsyncArrowHead] (node_modules/@babel/parser/src/parser/expression.ts:914:29)
+      at Parser.parseCoverCallAndAsyncArrowHead [as parseSubscript] (node_modules/@babel/parser/src/parser/expression.ts:796:19)
+      at Parser.parseSubscript [as parseSubscripts] (node_modules/@babel/parser/src/parser/expression.ts:755:19)
+      at Parser.parseSubscripts [as parseExprSubscripts] (node_modules/@babel/parser/src/parser/expression.ts:740:17)
+      at Parser.parseExprSubscripts [as parseUpdate] (node_modules/@babel/parser/src/parser/expression.ts:713:21)
+      at Parser.parseUpdate [as parseMaybeUnary] (node_modules/@babel/parser/src/parser/expression.ts:675:23)
+      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (node_modules/@babel/parser/src/parser/expression.ts:409:14)
+      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (node_modules/@babel/parser/src/parser/expression.ts:421:23)
+      at Parser.parseExprOps [as parseMaybeConditional] (node_modules/@babel/parser/src/parser/expression.ts:376:23)
+      at Parser.parseMaybeConditional [as parseMaybeAssign] (node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at Parser.parseMaybeAssign [as parseExpressionBase] (node_modules/@babel/parser/src/parser/expression.ts:226:23)
+      at parseExpressionBase (node_modules/@babel/parser/src/parser/expression.ts:217:39)
+      at Parser.callback [as allowInAnd] (node_modules/@babel/parser/src/parser/expression.ts:3187:16)
+      at Parser.allowInAnd [as parseExpression] (node_modules/@babel/parser/src/parser/expression.ts:217:17)
+      at Parser.parseExpression [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:683:23)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:477:17)
+      at Parser.parseStatementLike [as parseModuleItem] (node_modules/@babel/parser/src/parser/statement.ts:414:17)
+      at Parser.parseModuleItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+      at Parser.parseBlockBody [as parseProgram] (node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at Parser.parseProgram [as parseTopLevel] (node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at Parser.parseTopLevel [as parse] (node_modules/@babel/parser/src/parser/index.ts:93:10)
+      at parse (node_modules/@babel/parser/src/index.ts:92:38)
+      at parser (node_modules/@babel/core/src/parser/index.ts:28:19)
+          at parser.next (<anonymous>)
+      at normalizeFile (node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+          at normalizeFile.next (<anonymous>)
+      at run (node_modules/@babel/core/src/transformation/index.ts:40:36)
+          at run.next (<anonymous>)
+      at transform (node_modules/@babel/core/src/transform.ts:29:20)
+          at transform.next (<anonymous>)
+      at evaluateSync (node_modules/gensync/index.js:251:28)
+      at sync (node_modules/gensync/index.js:89:14)
+      at fn (node_modules/@babel/core/src/errors/rewrite-stack-trace.ts:99:14)
+      at transformSync (node_modules/@babel/core/src/transform.ts:66:52)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/ScriptTransformer.js:545:31)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/ScriptTransformer.js:674:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/ScriptTransformer.js:726:19)
 
 Test Suites: 1 failed, 1 total
 Tests:       0 total
 Snapshots:   0 total
-Time:        2.799 s
+Time:        0.399 s
 Ran all test suites.
-Error: Command failed: npm test -- 
+Error: Command failed: npm test
     at checkExecSyncError (node:child_process:890:11)
     at execSync (node:child_process:962:15)
-    at test (/workspaces/Ziver_MVP/contracts/node_modules/@ton/blueprint/dist/cli/test.js:27:34)
-    at main (/workspaces/Ziver_MVP/contracts/node_modules/@ton/blueprint/dist/cli/cli.js:113:11) {
+    at test (/workspaces/Ziver_MVP/contracts/node_modules/@ton/blueprint/dist/cli/test.js:6:34)
+    at main (/workspaces/Ziver_MVP/contracts/node_modules/@ton/blueprint/dist/cli/cli.js:94:11) {
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 57962,
+  pid: 89024,
   stdout: null,
   stderr: null
 }
