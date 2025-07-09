@@ -75,7 +75,7 @@ describe('EscrowSM', () => {
         expect(td?.totalEscrowedFunds).toEqual(payment);
         expect(td?.currentState).toEqual(EscrowState.Active);
 
-        blockchain.now = Number(expiry) + 1; // Corrected time setting
+        blockchain.now = Number(expiry) + 1;
 
         const expireBody = beginCell().storeUint(Opcodes.ExpireTask, 32).storeUint(3n, 64).storeUint(taskId, 256).endCell();
         await performer1.send({ to: escrowSM.address, value: toNano('0.05'), body: expireBody });
@@ -100,7 +100,7 @@ describe('EscrowSM', () => {
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
 
         await expect(
-            taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody }) // Send the exact same message
+            taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody })
         ).rejects.toThrow();
     });
 
@@ -281,7 +281,7 @@ describe('EscrowSM', () => {
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
         
         const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(72n, 64).storeUint(taskId, 256).endCell();
-        await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
+        await taskPoster.send({ to: escrowSM.address,.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
         
         const verifyBody = beginCell()
             .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(73n, 64).storeUint(taskId, 256)
