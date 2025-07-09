@@ -8,6 +8,6 @@ module.exports = {
 
   // Keep your specific testMatch pattern to tell Jest where to find your tests.
   testMatch: [
-    '<rootDir>/contracts/tests/**/*.spec.ts'
+    '<rootDir>/tests/**/*.spec.ts'
   ],
 };
