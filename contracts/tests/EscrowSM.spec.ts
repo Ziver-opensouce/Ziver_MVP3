@@ -124,9 +124,6 @@ describe('EscrowSM', () => {
         const verifyBody = beginCell()
             .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(23n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
-        const verifyBody = beginCell()
-            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(73n, 64).storeUint(taskId, 256)
-            .storeAddress(performer1.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody });
 
         const performer1BalAfter = await performer1.getBalance();
@@ -284,7 +281,7 @@ describe('EscrowSM', () => {
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
         
         const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(72n, 64).storeUint(taskId, 256).endCell();
-        await taskPoster.send({ to: escrowSM.address,.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
+        await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
         
         const verifyBody = beginCell()
             .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(73n, 64).storeUint(taskId, 256)
@@ -386,3 +383,4 @@ describe('EscrowSM', () => {
         const posterBalanceAfter = await taskPoster.getBalance();
         expect(posterBalanceAfter).toBeGreaterThan(posterBalanceBefore);
     });
+});
