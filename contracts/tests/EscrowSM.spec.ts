@@ -1,7 +1,7 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton-community/sandbox';
+import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox'; // Corrected import
 import { Address, Cell, Dictionary, toNano } from '@ton/core';
 import { EscrowSM, EscrowSMData, EscrowState } from '../wrappers/EscrowSM';
-import '@ton-community/test-utils';
+import '@ton/test-utils'; // Corrected import
 
 describe('EscrowSM', () => {
     let blockchain: Blockchain;
@@ -24,7 +24,8 @@ describe('EscrowSM', () => {
             accumulatedFees: 0n,
         };
 
-        escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData, null));
+        // Corrected the 'null' to '0' for the workchain
+        escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData, 0));
 
         const deployResult = await escrowSM.sendDeploy(deployer.getSender(), toNano('0.05'));
         expect(deployResult.transactions).toHaveTransaction({
