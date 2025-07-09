@@ -10,13 +10,17 @@ import {
     Sender,
     SendMode,
     Slice,
-    toNano
+    toNano,
 } from '@ton/core';
+// Add this line to import the compiled code from your build folder
+import EscrowSMCompiled from '../build/EscrowSM.compiled.json';
 
 // --- Dictionary value resolvers ---
 const dictionaryValueResolver = {
-    serialize: (src: Cell, builder: Builder) => { builder.storeRef(src); },
-    parse: (src: Slice) => src.loadRef()
+    serialize: (src: Cell, builder: Builder) => {
+        builder.storeRef(src);
+    },
+    parse: (src: Slice) => src.loadRef(),
 };
 
 // --- Escrow State Enum ---
@@ -68,12 +72,13 @@ export const Opcodes = {
     withdrawFunds: 0x55667788,
     cancelTaskAndRefund: 0x99aabbcc,
     withdrawFee: 0xddccbbaa,
-    expireTask: 0xaabbccdd
+    expireTask: 0xaabbccdd,
 };
 
 // --- Main Contract Wrapper ---
 export class EscrowSM implements Contract {
-    static readonly code = Cell.fromBase64('te6ccgECIAEAA7QAAgE0BAEBAgGUAA4AART/APSkE/S88sgLAQIBIAIDAgEgBgcCASAKCwAYABhISEBAXv+ABwADgAsACgANAA4ACABG32omhAEGuQ641I41JvQC+78M8wAbBwwA49ma0DDsA49ma0DDsAgEgDA0AEb4AIBIBEQAgEgERIATvhAAm+EABc+EACf+EADBvhABE/4AIGH+EAFf+EACd8QAGf+EAAnfhAgAwNvbW1sZW50czogcmVwbGF5IGF0dGFjayBwcm90ZWN0aW9uDwAVCgFPINdJ0CDXMdAnIP8v/y8AINch0IGHINdJ0CHXMdAn1DDTAAkkAB8ADgAQABIAEAANADAAZgAnADEAOwA+ADUANgAzADkAECASAQDgAJvhi+EABfhi+EACf8QAMfhi+EACKn/FAAk4+EACaF+ECAAg8AcgAh8AcgAcf9QB+gD6APpA+gD6QB8A0/UAfTP/1AE1+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6QPsA+gD6QPpA+gD6QPpA+gD6APpA3gD6QPpA+gD6QPpA+gD6QPsA+gD6QPoA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AN4A+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6AfoA+gD6QPpA+gD6QPpA+gD6APoA+gD6QPpA+gD6QPpA+gD6APpA+kDd');
+    // This line is now changed to load the code directly from the compiled JSON
+    static readonly code: Cell = Cell.fromBoc(Buffer.from(EscrowSMCompiled.hex, 'hex'))[0];
 
     static createFromAddress(address: Address) {
         return new EscrowSM(address);
