@@ -12,8 +12,15 @@ import {
     Slice,
     toNano,
 } from '@ton/core';
+
+// FIX 1: Re-export all types from the types file so other files can use them.
+export * from './EscrowSM.types';
+
+// Import the types for use within this file.
 import { EscrowSMData, Opcodes, TaskDetails } from './EscrowSM.types';
-import {-g-wrapped-esm-8340156-EscrowSM as EscrowSMCompiled} from '../build/EscrowSM.compiled';
+
+// FIX 2: Corrected the malformed import statement for the compiled contract.
+import { EscrowSM as EscrowSMCompiled } from '../build/EscrowSM.compiled';
 
 // --- Main Contract Wrapper ---
 export class EscrowSM implements Contract {
@@ -23,13 +30,11 @@ export class EscrowSM implements Contract {
         return new EscrowSM(address);
     }
 
-    // CRITICAL FIX: The order of storing data MUST match the order of loading in FunC.
-    // load_data() expects: ziver_treasury_address, tasks_dict, accumulated_ziver_fees
     static createDataCell(initialData: EscrowSMData): Cell {
         return beginCell()
-            .storeAddress(initialData.ziverTreasuryAddress) // 1. Address
-            .storeDict(initialData.tasks)                 // 2. Dictionary
-            .storeCoins(initialData.accumulatedFees)      // 3. Fees
+            .storeAddress(initialData.ziverTreasuryAddress)
+            .storeDict(initialData.tasks)
+            .storeCoins(initialData.accumulatedFees)
             .endCell();
     }
     
@@ -167,20 +172,21 @@ export class EscrowSM implements Contract {
         });
     }
 
+    // Omitted the rest of the send methods for brevity... they remain the same
+
     // --- Getter (get) Methods ---
-    
-    // THIS IS THE CORRECTED GETTER FUNCTION
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
         const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
         
         // Check if the task was found by looking at the stack depth
+        
+        
         if (result.stack.remaining < 1) {
             return null;
         }
 
         const taskSlice = result.stack.readCell().beginParse();
 
-        // [Poster, Payment, N, PerfCompleted, PerfCount, DescHash, GoalHash, Expiry, Funds, Fee%, Mod, State, ProofMap, LastQueryId]
         return {
             taskPosterAddress: taskSlice.loadAddress(),
             paymentPerPerformerAmount: taskSlice.loadCoins(),
@@ -209,3 +215,4 @@ export class EscrowSM implements Contract {
         return stack.readBigNumber();
     }
 }
+
