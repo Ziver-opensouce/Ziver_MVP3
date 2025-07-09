@@ -1,12 +1,12 @@
-import type { Config } from 'jest';
+import { Config } from 'jest';
+import { pathsToModuleNameMapper } from 'ts-jest';
+import { compilerOptions } from './tsconfig.json';
 
 const config: Config = {
-    preset: 'ts-jest',
-    globalSetup: './jest.setup.ts',
-    cache: false, // disabled caching to prevent old Tact files from being used after a rebuild
-    testEnvironment: '@ton/sandbox/jest-environment',
-    testPathIgnorePatterns: ['/node_modules/', '/dist/'],
-    reporters: ['default', ['@ton/sandbox/jest-reporter', {}]],
+    preset: '@ton/blueprint/jest-preset.json', // This is the fix
+    moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
+        prefix: '<rootDir>/',
+    }),
 };
 
 export default config;
