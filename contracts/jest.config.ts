@@ -1,8 +1,5 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-    testEnvironment: '@ton/sandbox',
-    transform: {
-        '^.+\\.(ts|tsx)$': 'ts-jest',
-    },
-    testRegex: '/tests/.*\\.(test|spec)?\\.(ts|tsx)$',
-    moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  preset: 'ts-jest',
+  testEnvironment: 'node',
 };
