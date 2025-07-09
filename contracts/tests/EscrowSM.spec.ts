@@ -13,14 +13,20 @@ describe('EscrowSM', () => {
     let performer2: SandboxContract<TreasuryContract>;
     let moderator: SandboxContract<TreasuryContract>;
 
+    // This runs before each test
     beforeEach(async () => {
         blockchain = await Blockchain.create();
         deployer = await blockchain.treasury('deployer');
         ziverTreasury = await blockchain.treasury('ziverTreasury');
+        taskPoster = await blockchain.treasury('taskPoster');
+        performer1 = await blockchain.treasury('performer1');
+        performer2 = await blockchain.treasury('performer2');
+        moderator = await blockchain.treasury('moderator');
 
+        // IMPORTANT: The order of fields here MUST match the reading order in your FunC code.
         const initialData: EscrowSMData = {
-            tasks: Dictionary.empty(),
             ziverTreasuryAddress: ziverTreasury.address,
+            tasks: Dictionary.empty(),
             accumulatedFees: 0n,
         };
 
@@ -33,11 +39,6 @@ describe('EscrowSM', () => {
             deploy: true,
             success: true,
         });
-
-        taskPoster = await blockchain.treasury('taskPoster');
-        performer1 = await blockchain.treasury('performer1');
-        performer2 = await blockchain.treasury('performer2');
-        moderator = await blockchain.treasury('moderator');
     });
 
     it('should deploy and have correct initial data', async () => {
@@ -128,7 +129,6 @@ describe('EscrowSM', () => {
 
         const performer1BalAfter = await performer1.getBalance();
         const expectedPayout = payment - fee;
-
         expect(performer1BalAfter - performer1BalBefore).toBeGreaterThan(expectedPayout - toNano('0.05'));
         expect(await escrowSM.getAccumulatedFees()).toEqual(fee);
     });
@@ -241,7 +241,7 @@ describe('EscrowSM', () => {
 
         const cancelBody = beginCell().storeUint(Opcodes.cancelTaskAndRefund, 32).storeUint(53n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: cancelBody });
-
+        
         const td = await escrowSM.getTaskDetails(taskId);
         expect(td?.currentState).toEqual(EscrowState.Refunded);
         expect(td?.totalEscrowedFunds).toEqual(0n);
@@ -265,6 +265,7 @@ describe('EscrowSM', () => {
         const verifyBody = beginCell()
             .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(63n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
+        
         await expect(
             performer2.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody })
         ).rejects.toThrow();
@@ -289,6 +290,7 @@ describe('EscrowSM', () => {
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody });
 
         const withdrawBody = beginCell().storeUint(Opcodes.withdrawFee, 32).storeUint(74n, 64).endCell();
+        
         await expect(
             taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: withdrawBody })
         ).rejects.toThrow();
@@ -315,6 +317,7 @@ describe('EscrowSM', () => {
         const verifyBodyAgain = beginCell()
             .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(84n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
+        
         await expect(
             taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBodyAgain })
         ).rejects.toThrow();
@@ -342,7 +345,7 @@ describe('EscrowSM', () => {
 
         const posterBalanceAfter = await taskPoster.getBalance();
         const maxExpectedCost = payment + toNano('0.05');
-
+        
         expect(posterBalanceBefore - posterBalanceAfter).toBeLessThan(maxExpectedCost + overpaymentAmount);
         expect(posterBalanceBefore - posterBalanceAfter).toBeGreaterThan(maxExpectedCost - toNano('0.01'));
 
