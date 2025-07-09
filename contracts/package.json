@@ -1,16 +1,14 @@
 {
-    "name": "contracts",
+    "name": "ziver-mvp",
     "version": "0.0.1",
     "scripts": {
-        "bp": "blueprint",
-        "start": "blueprint run",
-        "build": "blueprint build",
-        "test": "jest --verbose",
-        "prepare": "husky"
+        "build": "cd contracts && npx blueprint build",
+        "test": "jest -c contracts/jest.config.js --verbose",
+        "bp": "cd contracts && npx blueprint"
     },
     "devDependencies": {
         "@tact-lang/compiler": "^1.1.5",
-        "@ton/blueprint": "^0.38.0",
+        "@ton/blueprint": "^0.15.0",
         "@ton/core": "^0.56.3",
         "@ton/crypto": "^3.2.0",
         "@ton/sandbox": "^0.18.0",
