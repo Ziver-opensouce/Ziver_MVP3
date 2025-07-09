@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "scripts": {
     "build": "cd contracts && npx blueprint build",
-    "test": "jest --config ../jest.config.js --verbose",
+     "test": "jest --verbose", 
     "bp": "cd contracts && npx blueprint"
 },
     "devDependencies": {
