@@ -8,15 +8,14 @@
         "test": "jest --verbose",
         "prepare": "husky"
     },
-    "dependencies": {},
     "devDependencies": {
+        "@tact-lang/compiler": "^1.1.5",
+        "@ton/blueprint": "^0.38.0",
         "@ton/core": "^0.56.3",
-        "@ton/ton": "^13.9.0",
         "@ton/crypto": "^3.2.0",
-        "@ton/blueprint": "^0.15.0",
         "@ton/sandbox": "^0.18.0",
         "@ton/test-utils": "^0.4.0",
-        "@tact-lang/compiler": "^1.1.5",
+        "@ton/ton": "^13.9.0",
         "@types/jest": "^29.5.12",
         "@types/node": "^20.12.7",
         "husky": "^9.0.11",
