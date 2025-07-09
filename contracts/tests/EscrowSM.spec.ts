@@ -52,7 +52,7 @@ describe('EscrowSM', () => {
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 2);
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32)
+            .storeUint(Opcodes.setTaskDetails, 32)
             .storeUint(1n, 64)
             .storeUint(taskId, 256)
             .storeCoins(payment)
@@ -68,7 +68,7 @@ describe('EscrowSM', () => {
         let td = await escrowSM.getTaskDetails(taskId);
         expect(td?.currentState).toEqual(EscrowState.TaskSetAndFundsPending);
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(2n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(2n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
 
         td = await escrowSM.getTaskDetails(taskId);
@@ -77,7 +77,7 @@ describe('EscrowSM', () => {
 
         blockchain.now = Number(expiry) + 1;
 
-        const expireBody = beginCell().storeUint(Opcodes.ExpireTask, 32).storeUint(3n, 64).storeUint(taskId, 256).endCell();
+        const expireBody = beginCell().storeUint(Opcodes.expireTask, 32).storeUint(3n, 64).storeUint(taskId, 256).endCell();
         await performer1.send({ to: escrowSM.address, value: toNano('0.05'), body: expireBody });
 
         td = await escrowSM.getTaskDetails(taskId);
@@ -91,12 +91,12 @@ describe('EscrowSM', () => {
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600);
         
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(10n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(10n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(expiry, 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(11n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(11n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
 
         await expect(
@@ -111,18 +111,21 @@ describe('EscrowSM', () => {
         const fee = (payment * feePct) / 100n;
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(21n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(21n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(10n, 256).storeUint(20n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(feePct, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(22n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(22n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
 
         const performer1BalBefore = await performer1.getBalance();
         
         const verifyBody = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(23n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(23n, 64).storeUint(taskId, 256)
+            .storeAddress(performer1.address).endCell();
+        const verifyBody = beginCell()
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(73n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody });
 
@@ -139,16 +142,16 @@ describe('EscrowSM', () => {
         const nPerformers = 2n;
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(101n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(101n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(nPerformers, 8).storeUint(1n, 256).storeUint(2n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(10n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(102n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(102n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment * nPerformers + toNano('0.05'), body: depositBody });
 
         const verifyBody1 = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(103n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(103n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody1 });
 
@@ -156,7 +159,7 @@ describe('EscrowSM', () => {
         expect(td?.currentState).toEqual(EscrowState.PendingVerification);
 
         const verifyBody2 = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(104n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(104n, 64).storeUint(taskId, 256)
             .storeAddress(performer2.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody2 });
 
@@ -172,22 +175,22 @@ describe('EscrowSM', () => {
         const fee = (payment * feePct) / 100n;
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(31n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(31n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(feePct, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(32n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(32n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
         
         const verifyBody = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(33n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(33n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody });
         expect(await escrowSM.getAccumulatedFees()).toEqual(fee);
 
         const treasuryBalBefore = await ziverTreasury.getBalance();
-        const withdrawBody = beginCell().storeUint(Opcodes.WithdrawFee, 32).storeUint(34n, 64).endCell();
+        const withdrawBody = beginCell().storeUint(Opcodes.withdrawFee, 32).storeUint(34n, 64).endCell();
         await ziverTreasury.send({ to: escrowSM.address, value: toNano('0.05'), body: withdrawBody });
 
         expect(await escrowSM.getAccumulatedFees()).toEqual(0n);
@@ -200,25 +203,25 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
         
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(41n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(41n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
         
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(42n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(42n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
 
-        const submitProofBody = beginCell().storeUint(Opcodes.SubmitProof, 32).storeUint(43n, 64).storeUint(taskId, 256).storeUint(123n, 256).endCell();
+        const submitProofBody = beginCell().storeUint(Opcodes.submitProof, 32).storeUint(43n, 64).storeUint(taskId, 256).storeUint(123n, 256).endCell();
         await performer1.send({ to: escrowSM.address, value: toNano('0.05'), body: submitProofBody });
 
-        const raiseDisputeBody = beginCell().storeUint(Opcodes.RaiseDispute, 32).storeUint(44n, 64).storeUint(taskId, 256).endCell();
+        const raiseDisputeBody = beginCell().storeUint(Opcodes.raiseDispute, 32).storeUint(44n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: raiseDisputeBody });
 
         let td = await escrowSM.getTaskDetails(taskId);
         expect(td?.currentState).toEqual(EscrowState.Disputed);
 
         const resolveBody = beginCell()
-            .storeUint(Opcodes.ResolveDispute, 32).storeUint(45n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.resolveDispute, 32).storeUint(45n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await moderator.send({ to: escrowSM.address, value: toNano('0.05'), body: resolveBody });
 
@@ -231,15 +234,15 @@ describe('EscrowSM', () => {
         const payment = toNano('2');
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(51n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(51n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(2n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(52n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(52n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment / 2n + toNano('0.05'), body: depositBody });
 
-        const cancelBody = beginCell().storeUint(Opcodes.CancelTaskAndRefund, 32).storeUint(53n, 64).storeUint(taskId, 256).endCell();
+        const cancelBody = beginCell().storeUint(Opcodes.cancelTaskAndRefund, 32).storeUint(53n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: cancelBody });
 
         const td = await escrowSM.getTaskDetails(taskId);
@@ -254,16 +257,16 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(61n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(61n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(62n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(62n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
 
         const verifyBody = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(63n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(63n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await expect(
             performer2.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody })
@@ -275,20 +278,20 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(71n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(71n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(10n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
         
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(72n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(72n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address,.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
         
         const verifyBody = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(73n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(73n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody });
 
-        const withdrawBody = beginCell().storeUint(Opcodes.WithdrawFee, 32).storeUint(74n, 64).endCell();
+        const withdrawBody = beginCell().storeUint(Opcodes.withdrawFee, 32).storeUint(74n, 64).endCell();
         await expect(
             taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: withdrawBody })
         ).rejects.toThrow();
@@ -299,21 +302,21 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
         
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(81n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(81n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(2n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(82n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(82n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment * 2n + toNano('0.05'), body: depositBody });
         
         const verifyBody = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(83n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(83n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBody });
 
         const verifyBodyAgain = beginCell()
-            .storeUint(Opcodes.VerifyTaskCompletion, 32).storeUint(84n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.verifyTaskCompletion, 32).storeUint(84n, 64).storeUint(taskId, 256)
             .storeAddress(performer1.address).endCell();
         await expect(
             taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: verifyBodyAgain })
@@ -325,7 +328,7 @@ describe('EscrowSM', () => {
         const payment = toNano('5');
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(91n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(91n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
@@ -333,7 +336,7 @@ describe('EscrowSM', () => {
         const posterBalanceBefore = await taskPoster.getBalance();
         const overpaymentAmount = toNano('2');
 
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(92n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(92n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({
             to: escrowSM.address,
             value: payment + overpaymentAmount + toNano('0.05'),
@@ -355,24 +358,24 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
 
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.SetTaskDetails, 32).storeUint(91n, 64).storeUint(taskId, 256).storeCoins(payment)
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(91n, 64).storeUint(taskId, 256).storeCoins(payment)
             .storeUint(1n, 8).storeUint(0n, 256).storeUint(0n, 256).storeUint(BigInt(Math.floor(Date.now() / 1000) + 3600), 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
         
-        const depositBody = beginCell().storeUint(Opcodes.DepositFunds, 32).storeUint(92n, 64).storeUint(taskId, 256).endCell();
+        const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(92n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: payment + toNano('0.05'), body: depositBody });
         
-        const submitProofBody = beginCell().storeUint(Opcodes.SubmitProof, 32).storeUint(93n, 64).storeUint(taskId, 256).storeUint(123n, 256).endCell();
+        const submitProofBody = beginCell().storeUint(Opcodes.submitProof, 32).storeUint(93n, 64).storeUint(taskId, 256).storeUint(123n, 256).endCell();
         await performer1.send({ to: escrowSM.address, value: toNano('0.05'), body: submitProofBody });
         
-        const raiseDisputeBody = beginCell().storeUint(Opcodes.RaiseDispute, 32).storeUint(94n, 64).storeUint(taskId, 256).endCell();
+        const raiseDisputeBody = beginCell().storeUint(Opcodes.raiseDispute, 32).storeUint(94n, 64).storeUint(taskId, 256).endCell();
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: raiseDisputeBody });
 
         const posterBalanceBefore = await taskPoster.getBalance();
 
         const resolveBody = beginCell()
-            .storeUint(Opcodes.ResolveDispute, 32).storeUint(95n, 64).storeUint(taskId, 256)
+            .storeUint(Opcodes.resolveDispute, 32).storeUint(95n, 64).storeUint(taskId, 256)
             .storeAddress(taskPoster.address).endCell();
         await moderator.send({ to: escrowSM.address, value: toNano('0.05'), body: resolveBody });
 
@@ -383,4 +386,3 @@ describe('EscrowSM', () => {
         const posterBalanceAfter = await taskPoster.getBalance();
         expect(posterBalanceAfter).toBeGreaterThan(posterBalanceBefore);
     });
-});
