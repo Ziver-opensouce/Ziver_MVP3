@@ -5,10 +5,34 @@ from app.schemas import microjob as microjob_schemas
 from app.core.config import settings
 from fastapi import HTTPException, status
 
+# microjobs.txt
+
 def create_microjob(db: Session, poster: models.User, job_data: microjob_schemas.MicroJobCreate):
-    """
-    Creates a new micro-job.
-    """
+    """Creates a new micro-job entry in the DB, pending on-chain funding."""
+    
+    # Calculate expiration date
+    expiration = datetime.now(timezone.utc) + timedelta(days=job_data.duration_days)
+
+    db_microjob = models.MicroJob(
+        poster_id=poster.id,
+        title=job_data.title,
+        description=job_data.description,
+        ton_payment_amount=job_data.ton_payment_amount,
+        status="pending_funding", # <-- NEW STATUS
+        expiration_date=expiration,
+        verification_criteria=job_data.verification_criteria,
+        ziver_fee_percentage=job_data.ziver_fee_percentage,
+    )
+    db.add(db_microjob)
+    db.commit()
+    db.refresh(db_microjob)
+    
+    # Return the job details along with the contract address for the user to fund
+    return {
+        "job_details": db_microjob,
+        "escrow_contract_address": "EQ...YOUR_CONTRACT_ADDRESS..." # Send this to the frontend
+    }
+
     # Assuming job_data.ton_payment_amount is the full payment, Ziver's fee will be deducted from it
     # For now, let's assume the poster pays the full amount, and Ziver takes its cut from the payment to the worker.
     # Alternatively, the poster could pay Ziver upfront for listing (time-based) and then the worker payment.
