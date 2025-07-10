@@ -72,12 +72,15 @@ export class EscrowSM implements Contract {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
+            // EscrowSM.txt (Corrected Logic in sendSetTaskDetails)
+
+// ...
             body: beginCell()
-                .storeUint(Opcodes.setTaskDetails, 32)
+                .storeUint(Opcodes.setTaskDetails, 32) // Correctly named in your file
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 256)
+                .storeUint(opts.taskId, 64) // FIX: Changed from 256 to 64
                 .storeCoins(opts.paymentPerPerformerAmount)
-                .storeUint(opts.numberOfPerformersNeeded, 8)
+                .storeUint(opts.numberOfPerformersNeeded, 32) // FIX: Changed from 8 to 32
                 .storeUint(opts.taskDescriptionHash, 256)
                 .storeUint(opts.taskGoalHash, 256)
                 .storeUint(opts.expiryTimestamp, 64)
