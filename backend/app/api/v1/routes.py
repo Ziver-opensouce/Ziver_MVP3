@@ -3,6 +3,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List, Annotated
 from app.schemas import user as user_schemas, wallet as wallet_schemas # Create a new wallet.py schema file
+from app.schemas import sponsored_task as sponsored_task_schemas
+from app.services import tasks as tasks_service
 from datetime import datetime, timedelta, timezone
 
 from app.db import models, database
@@ -108,7 +110,6 @@ def link_ton_wallet(
     db.commit()
     db.refresh(current_user)
     return current_user
-    
     
 
 # --- RE-DEFINE THE login_for_access_token ENDPOINT ---
@@ -332,6 +333,15 @@ def complete_task_endpoint(task_id: int,
     """
     result = tasks_service.complete_task(db, current_user, task_id)
     return result["completion"] # Return just the completion object from the service's dict
+
+@router.post("/tasks/sponsor", response_model=task_schemas.TaskResponse, status_code=201)
+def create_user_sponsored_task(
+    task_data: sponsored_task_schemas.UserSponsoredTaskCreate,
+    current_user: Annotated[models.User, Depends(get_active_user)],
+    db: Annotated[Session, Depends(database.get_db)]
+):
+    """Allows an authenticated user to spend ZP to create a sponsored task."""
+    return tasks_service.create_sponsored_task(db, current_user, task_data)
 
 
 # --- Micro-Job Marketplace ---
