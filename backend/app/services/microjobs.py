@@ -5,8 +5,6 @@ from app.schemas import microjob as microjob_schemas
 from app.core.config import settings
 from fastapi import HTTPException, status
 
-# microjobs.txt
-
 def create_microjob(db: Session, poster: models.User, job_data: microjob_schemas.MicroJobCreate):
     """Creates a new micro-job entry in the DB, pending on-chain funding."""
     
