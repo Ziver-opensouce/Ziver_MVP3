@@ -408,6 +408,26 @@ def activate_microjob(
     
     return microjob
 
+@router.post("/microjobs/{job_id}/chat", response_model=ChatMessageResponse)
+def post_chat_message(
+    job_id: int,
+    message_data: ChatMessageCreate,
+    current_user: Annotated[models.User, Depends(get_active_user)],
+    db: Annotated[Session, Depends(database.get_db)]
+):
+    # Logic to verify user is part of the job (poster or has submitted)
+    # Save the message to the database
+    ...
+
+@router.get("/microjobs/{job_id}/chat", response_model=List[ChatMessageResponse])
+def get_chat_messages(
+    job_id: int,
+    current_user: Annotated[models.User, Depends(get_active_user)],
+    db: Annotated[Session, Depends(database.get_db)]
+):
+    # Logic to fetch all messages for the job_id
+    # Return the list of messages
+    ...
 
 @router.post("/microjobs/submissions/{submission_id}/reject")
 def reject_microjob_submission_endpoint(submission_id: int,
