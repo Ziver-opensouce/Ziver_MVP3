@@ -1,16 +1,15 @@
 import { Address, Cell, Dictionary } from '@ton/core';
 
-// Opcodes for your contract's operations
 export const Opcodes = {
-    setTaskDetails: 0x7b21c2e9,
-    depositFunds: 0x4aa33259,
-    verifyTaskCompletion: 0x3af5a6a4,
-    submitProof: 0x6e313271,
-    raiseDispute: 0x8a7c2cd3,
-    resolveDispute: 0x9f1a0e5b,
-    cancelTaskAndRefund: 0xc4e57873,
-    withdrawFee: 0x21a039d1,
-    expireTask: 0x5b394b9b,
+    setTaskDetails: 0x1a2b3c4d,
+    depositFunds: 0x5e6f7a8b,
+    verifyTaskCompletion: 0x9c0d1e2f,
+    submitProof: 0x3a4b5c6d,
+    raiseDispute: 0x7e8f9a0b,
+    resolveDispute: 0x11223344,
+    cancelTaskAndRefund: 0x99aabbcc,
+    withdrawFee: 0xddccbbaa,
+    expireTask: 0xaabbccdd,
 };
 
 // States for the task lifecycle
