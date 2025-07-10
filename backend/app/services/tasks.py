@@ -4,6 +4,47 @@ from app.schemas import task as task_schemas
 from app.core.config import settings
 from fastapi import HTTPException, status
 from sqlalchemy import not_
+from datetime import datetime, timedelta, timezone
+# Add your new schema import
+from app.schemas import sponsored_task as sponsored_task_schemas
+
+def create_sponsored_task(db: Session, user: models.User, task_data: sponsored_task_schemas.UserSponsoredTaskCreate):
+    """Deducts ZP and creates a user-sponsored task with an expiration."""
+    
+    duration_costs = {
+        "1_day": {"cost": 10000, "delta": timedelta(days=1)},
+        "5_days": {"cost": 30000, "delta": timedelta(days=5)},
+        "15_days": {"cost": 100000, "delta": timedelta(days=15)},
+    }
+    
+    config = duration_costs.get(task_data.duration.value)
+    
+    if user.zp_balance < config["cost"]:
+        raise HTTPException(status_code=402, detail=f"Insufficient ZP. This requires {config['cost']} ZP.")
+    
+    # 1. Deduct ZP from the user
+    user.zp_balance -= config["cost"]
+    
+    # 2. Create the task
+    expiration = datetime.now(timezone.utc) + config["delta"]
+    
+    new_task = models.Task(
+        title=task_data.title,
+        description=task_data.description,
+        zp_reward=task_data.zp_reward,
+        external_link=task_data.external_link,
+        type="user_sponsored", # A new type to identify these tasks
+        is_active=True,
+        poster_user_id=user.id,
+        expiration_date=expiration
+    )
+    
+    db.add(new_task)
+    db.add(user) # Add user to session to save the new balance
+    db.commit()
+    db.refresh(new_task)
+    
+    return new_task
 
 def get_available_tasks(db: Session, user_id: int):
     """
