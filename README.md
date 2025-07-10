@@ -75,8 +75,11 @@ Our submission showcases a fully functional backend API, a secure TON smart cont
 
 Instructions for deploying and testing the FunC smart contract using Blueprint.
 
-*(You can add your deployment script commands here later)*
+*npx blueprint build - - to build and compile the contract*
 
+*npx blueprint test - - to test the smart contract in a simulation environment*
+
+*npx blueprint run - - to deploy the smart contract to testnet or mainnet*
 ---
 
 ## 👥 Team
@@ -84,5 +87,5 @@ Instructions for deploying and testing the FunC smart contract using Blueprint.
 * **Zaidu Abubakar:** Project Lead, Strategist
 * **Leonid Cheremshantsev:** Smart Contracts & Backend Developer
 * **Adebanjo Dara:** TMA UI/UX Design Lead
-* **Divine:** Frontend and Fullstack Developer
+
 
