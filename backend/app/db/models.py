@@ -19,6 +19,10 @@ class User(Base):
     zp_balance = Column(Integer, default=0, nullable=False)
     social_capital_score = Column(Integer, default=0, nullable=False)
     last_checkin_date = Column(Date, default=None, nullable=True) # For daily streak tracking
+   id = Column(Integer, primary_key=True, index=True)
+    poster_user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # <-- ADD THIS
+    expiration_date = Column(DateTime(timezone=True), nullable=True) # <-- ADD THIS
+    title = Column(String, index=True, nullable=False)
 
     # Mining related fields
     current_mining_rate_zp_per_hour = Column(Integer, default=10, nullable=False)
