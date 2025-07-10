@@ -92,62 +92,24 @@ def register_user(user: user_schemas.UserCreate, db: Annotated[Session, Depends(
     db.refresh(db_user)
     return db_user
 
-@router.post("/token", response_model=user_schemas.Token)
-def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotated[Session, Depends(database.get_db)]):
-    """
-    Authenticates user and returns an access token.
-    Requires 2FA code if 2FA is enabled for the user.
-    """
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not security.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+# Add the new endpoint
+@router.post("/users/me/link-wallet", response_model=user_schemas.UserResponse)
+def link_ton_wallet(
+    wallet_data: wallet_schemas.WalletLinkRequest,
+    current_user: Annotated[models.User, Depends(get_active_user)],
+    db: Annotated[Session, Depends(database.get_db)]
+):
+    """Links a TON wallet address to the current user's profile."""
+    # Check if address is already taken
+    if db.query(models.User).filter(models.User.ton_wallet_address == wallet_data.wallet_address).first():
+        raise HTTPException(status_code=409, detail="This wallet address is already linked to another account.")
     
-    # --- MODIFY THIS SECTION FOR 2FA CHECK ---
-    # If 2FA is enabled for the user:
-    if user.is_2fa_enabled:
-        # Check if 2FA code was provided in the password field (for OAuth2PasswordRequestForm simplicity)
-        # Or you could expect it in a custom header, but modifying form_data is less common.
-        # For a truly separate 2FA step with OAuth2PasswordRequestForm,
-        # you'd respond differently here and have a *separate* endpoint for 2FA validation.
-        
-        # For simplicity with OAuth2PasswordRequestForm, we'll make a decision:
-        # If 2FA is enabled, and *no* 2FA code (e.g., in a custom header, or part of password) is present,
-        # we reject the login with a 403, indicating 2FA is required.
-        
-        # A more common approach is to create a custom login schema (e.g., UserLoginWith2FA)
-        # but OAuth2PasswordRequestForm is fixed.
-        # Let's adjust to be clear: if 2FA is enabled, and the client didn't supply the code
-        # in the standard 'password' field (e.g., 'password|2facode'), we reject.
-        # This is a common hack for simple OAuth2 forms.
-        
-        # Simpler approach: If 2FA is enabled, the password field *must* contain 'password|2FA_CODE'
-        # Or, just enforce that if is_2fa_enabled, they MUST use the separate 2FA confirm endpoint.
-        
-        # Let's make it explicit for this MVP. If 2FA is enabled, the first attempt without 2FA code fails.
-        # The user must make a second attempt with the code if they want to get the token.
-        
-        # If 2FA is enabled for the user, and the password sent is *just* the password,
-        # we reject, instructing the user to include the 2FA code.
-        # This means the frontend must send: "username": "email", "password": "yourpassword|123456" for example.
-        # OR, we need a custom login endpoint that takes email, password, and optional 2fa_code.
-        
-        # Let's pivot to using `UserLoginWith2FA` schema for the login endpoint
-        # to allow direct 2FA code submission. This is cleaner.
-        # So, we need to change `@router.post("/token", ...)`
-        # to `@router.post("/token", response_model=user_schemas.Token)`
-        # and change `form_data: Annotated[OAuth2PasswordRequestForm, Depends()]`
-        # to `login_data: user_schemas.UserLoginWith2FA, ...`
-
-        # Temporarily commenting out the previous definition for clarity
-        # We will redefine this endpoint slightly.
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login endpoint needs redefinition for 2FA handling. Proceed to next step.",
-        )
+    current_user.ton_wallet_address = wallet_data.wallet_address
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+    
+    
 
 # --- RE-DEFINE THE login_for_access_token ENDPOINT ---
 # Delete the old `login_for_access_token` function completely and replace it with this:
@@ -219,6 +181,48 @@ def confirm_2fa(two_fa_code: user_schemas.TwoFACode,
     # two_fa_service.confirm_2fa_setup will raise HTTPException on failure
     return {"message": "2FA confirmation failed. Please check your code and try again."}
 
+# --- MODIFY THIS SECTION FOR 2FA CHECK ---
+    # If 2FA is enabled for the user:
+    if user.is_2fa_enabled:
+        # Check if 2FA code was provided in the password field (for OAuth2PasswordRequestForm simplicity)
+        # Or you could expect it in a custom header, but modifying form_data is less common.
+        # For a truly separate 2FA step with OAuth2PasswordRequestForm,
+        # you'd respond differently here and have a *separate* endpoint for 2FA validation.
+        
+        # For simplicity with OAuth2PasswordRequestForm, we'll make a decision:
+        # If 2FA is enabled, and *no* 2FA code (e.g., in a custom header, or part of password) is present,
+        # we reject the login with a 403, indicating 2FA is required.
+        
+        # A more common approach is to create a custom login schema (e.g., UserLoginWith2FA)
+        # but OAuth2PasswordRequestForm is fixed.
+        # Let's adjust to be clear: if 2FA is enabled, and the client didn't supply the code
+        # in the standard 'password' field (e.g., 'password|2facode'), we reject.
+        # This is a common hack for simple OAuth2 forms.
+        
+        # Simpler approach: If 2FA is enabled, the password field *must* contain 'password|2FA_CODE'
+        # Or, just enforce that if is_2fa_enabled, they MUST use the separate 2FA confirm endpoint.
+        
+        # Let's make it explicit for this MVP. If 2FA is enabled, the first attempt without 2FA code fails.
+        # The user must make a second attempt with the code if they want to get the token.
+        
+        # If 2FA is enabled for the user, and the password sent is *just* the password,
+        # we reject, instructing the user to include the 2FA code.
+        # This means the frontend must send: "username": "email", "password": "yourpassword|123456" for example.
+        # OR, we need a custom login endpoint that takes email, password, and optional 2fa_code.
+        
+        # Let's pivot to using `UserLoginWith2FA` schema for the login endpoint
+        # to allow direct 2FA code submission. This is cleaner.
+        # So, we need to change `@router.post("/token", ...)`
+        # to `@router.post("/token", response_model=user_schemas.Token)`
+        # and change `form_data: Annotated[OAuth2PasswordRequestForm, Depends()]`
+        # to `login_data: user_schemas.UserLoginWith2FA, ...`
+
+        # Temporarily commenting out the previous definition for clarity
+        # We will redefine this endpoint slightly.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login endpoint needs redefinition for 2FA handling. Proceed to next step.",
+        )
 
 @router.post("/users/me/2fa/disable")
 def disable_2fa(two_fa_code: user_schemas.TwoFACode,
