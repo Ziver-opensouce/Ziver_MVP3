@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List, Annotated
+from app.schemas import user as user_schemas, wallet as wallet_schemas # Create a new wallet.py schema file
 from datetime import datetime, timedelta, timezone
 
 from app.db import models, database
