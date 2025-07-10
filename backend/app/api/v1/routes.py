@@ -254,24 +254,28 @@ def perform_daily_checkin(current_user: Annotated[models.User, Depends(get_activ
     # This endpoint could primarily be for *only* getting the daily bonus if a separate mechanic is desired,
     # distinct from mining claim.
 
-    today = datetime.now(timezone.utc).date()
-    if current_user.last_checkin_date == today:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You have already checked in today.")
+    # routes.txt (Corrected Logic)
 
-    zp_bonus = settings.ZP_DAILY_CHECKIN_BONUS
-    current_user.last_checkin_date = today
-    
-    # Update streak
-    if current_user.daily_streak_count > 0 and \
-       (today - timedelta(days=1)) == current_user.last_checkin_date: # This logic needs adjustment
-                                                                      # last_checkin_date is already today here
-        current_user.daily_streak_count += 1
-    else:
-        current_user.daily_streak_count = 1
+# ...
+today = datetime.now(timezone.utc).date()
+if current_user.last_checkin_date == today:
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You have already checked in today.")
 
-    current_user.zp_balance += zp_bonus
-    current_user.social_capital_score += zp_bonus # Daily check-in contributes to SCS
-    
+zp_bonus = settings.ZP_DAILY_CHECKIN_BONUS
+
+# Correctly check for a streak BEFORE updating the date
+is_consecutive_day = current_user.last_checkin_date and (today - current_user.last_checkin_date).days == 1
+
+if is_consecutive_day:
+    current_user.daily_streak_count += 1
+else:
+    current_user.daily_streak_count = 1
+
+# Now update the date and balances
+current_user.last_checkin_date = today
+current_user.zp_balance += zp_bonus
+current_user.social_capital_score += zp_bonus
+
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
