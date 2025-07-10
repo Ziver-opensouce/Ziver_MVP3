@@ -4,6 +4,7 @@ from app.schemas import task as task_schemas
 from app.core.config import settings
 from fastapi import HTTPException, status
 from sqlalchemy import not_
+from sqlalchemy import or_
 from datetime import datetime, timedelta, timezone
 # Add your new schema import
 from app.schemas import sponsored_task as sponsored_task_schemas
@@ -55,10 +56,16 @@ def get_available_tasks(db: Session, user_id: int):
                            .filter(models.UserTaskCompletion.user_id == user_id)\
                            .all()
     completed_task_ids = [task_id for (task_id,) in completed_task_ids]
+now = datetime.now(timezone.utc)
 
     # Query active tasks that are NOT in the completed list
     tasks = db.query(models.Task)\
-              .filter(models.Task.is_active == True, not_(models.Task.id.in_(completed_task_ids)))\
+              .filter(
+                  models.Task.is_active == True,
+                  not_(models.Task.id.in_(completed_task_ids)),
+                  # Task is valid if it has NO expiration date OR its expiration date is in the future
+                  or_(models.Task.expiration_date == None, models.Task.expiration_date > now)
+              )\
               .all()
     return tasks
 
