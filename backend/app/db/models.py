@@ -35,6 +35,9 @@ class User(Base):
     # --- ADDED THESE TWO NEW LINES FOR 2FA ---
     two_fa_secret = Column(String, nullable=True) # Stores the base32 secret for TOTP
     is_2fa_enabled = Column(Boolean, default=False)
+
+    ton_wallet_address = Column(String, unique=True, nullable=True, index=True) # <-- ADD THIS LINE
+
     # --- END OF 2FA ADDITION ---
 
     # Relationships
