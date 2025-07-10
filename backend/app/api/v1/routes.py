@@ -259,9 +259,7 @@ def perform_daily_checkin(current_user: Annotated[models.User, Depends(get_activ
     # This endpoint could primarily be for *only* getting the daily bonus if a separate mechanic is desired,
     # distinct from mining claim.
 
-    # routes.txt (Corrected Logic)
 
-# ...
 today = datetime.now(timezone.utc).date()
 if current_user.last_checkin_date == today:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You have already checked in today.")
@@ -377,6 +375,39 @@ def approve_microjob_submission_endpoint(submission_id: int,
     The micro-job poster approves a submission, triggering payment to the worker.
     """
     return microjobs_service.approve_microjob_completion(db, current_user, submission_id)
+
+# new route
+
+@router.post("/microjobs/{job_id}/activate", response_model=microjob_schemas.MicroJobResponse)
+def activate_microjob(
+    job_id: int,
+    current_user: Annotated[models.User, Depends(get_active_user)],
+    db: Annotated[Session, Depends(database.get_db)]
+):
+    """
+    Called by the frontend after it confirms the task has been funded on-chain.
+    This activates the job in the local database.
+    """
+    # This is a simplified version. A more robust solution would have the backend
+    # poll the chain itself, but for a hackathon, letting the frontend trigger this
+    # after its own polling is perfectly acceptable and much faster to build.
+    
+    microjob = db.query(models.MicroJob).filter(models.MicroJob.id == job_id, models.MicroJob.poster_id == current_user.id).first()
+    if not microjob:
+        raise HTTPException(status_code=404, detail="Micro-job not found or you are not the poster.")
+    if microjob.status != "pending_funding":
+        raise HTTPException(status_code=400, detail="Job is not pending funding.")
+        
+    # The frontend has confirmed funding, so we trust it and activate the job.
+    microjob.status = "active"
+    db.commit()
+    db.refresh(microjob)
+    
+    # Here you would now send the 'setTaskDetails' transaction to the smart contract
+    # from your backend hot wallet, as described in my previous message.
+    
+    return microjob
+
 
 @router.post("/microjobs/submissions/{submission_id}/reject")
 def reject_microjob_submission_endpoint(submission_id: int,
