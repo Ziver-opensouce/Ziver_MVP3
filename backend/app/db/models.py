@@ -143,3 +143,16 @@ class MicroJobSubmission(Base):
     # Relationships
     microjob = relationship("MicroJob", back_populates="submissions")
     worker = relationship("User", back_populates="microjob_submissions")
+
+# new class
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    microjob_id = Column(Integer, ForeignKey("microjobs.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message_text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    user = relationship("User")
+    microjob = relationship("MicroJob")
