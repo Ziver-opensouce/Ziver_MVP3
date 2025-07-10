@@ -57,12 +57,21 @@ def claim_zp(db: Session, user: models.User):
     zp_earned = min(int(zp_earned_raw), user.current_mining_capacity_zp)
 
     # Handle daily check-in bonus and streak
-    today = datetime.now(timezone.utc).date()
-    zp_bonus = 0
-    if user.last_checkin_date != today:
-        zp_bonus = settings.ZP_DAILY_CHECKIN_BONUS
-        user.last_checkin_date = today
-        if user.daily_streak_count > 0 and (today - timedelta(days=1)) == user.last_checkin_date:
+today = datetime.now(timezone.utc).date()
+zp_bonus = 0
+if user.last_checkin_date != today:
+    zp_bonus = settings.ZP_DAILY_CHECKIN_BONUS
+    
+    # Correctly check for a streak BEFORE updating the date
+    is_consecutive_day = user.last_checkin_date and (today - user.last_checkin_date).days == 1
+
+    if is_consecutive_day:
+        user.daily_streak_count += 1
+    else:
+        user.daily_streak_count = 1
+    
+    user.last_checkin_date = today
+
             user.daily_streak_count += 1
         else:
             user.daily_streak_count = 1 # Start/reset streak
