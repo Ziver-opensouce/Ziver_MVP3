@@ -1,47 +1,27 @@
-import { toNano, Address, Dictionary } from 'ton';
+import { toNano, Address, Dictionary } from '@ton/core';
 import { EscrowSM, EscrowSMData } from '../wrappers/EscrowSM';
-import { NetworkProvider, compile } from '@ton-community/blueprint';
+import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
     // IMPORTANT: Replace this with your actual Ziver Treasury Address
-    const ZIVER_TREASURY_ADDRESS = Address.parse('UQDl_5CtQqwxSKk9EoUbgKV6XsSDQqqkYYeZ0UFduTZuCtlP');
+    const ziverTreasuryAddress = Address.parse('UQDl_5CtQqwxSKk9EoUbgKV6XsSDQqqkYYeZ0UFduTZuCtlP');
 
-    // Initial contract data
+    // Initial data for the contract, matching the EscrowSMData type
     const initialData: EscrowSMData = {
-        tasks: Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.Cell()),
-        ziverTreasuryAddress: ZIVER_TREASURY_ADDRESS,
+        ziverTreasuryAddress: ziverTreasuryAddress,
+        tasks: Dictionary.empty(),
+        accumulatedFees: 0n, // FIX: Added missing 'accumulatedFees' field
     };
 
-    // Compile the contract
-    const compiledCode = await compile('EscrowSM');
+    // Create a new instance of the contract
+    const escrowSM = provider.open(await EscrowSM.createFromConfig(initialData));
 
-    // Create a new instance of the EscrowSM contract wrapper
-    const escrowSM = provider.open(EscrowSM.fromInit(initialData));
+    // Send the deploy transaction using the method from our wrapper
+    await escrowSM.sendDeploy(provider.sender(), toNano('0.1'));
 
-    // Check if the contract is already deployed
-    const isDeployed = await provider.isDeployed(escrowSM.address);
-    if (isDeployed) {
-        console.log(`Contract already deployed at address: ${escrowSM.address.toString()}`);
-        return;
-    }
-
-    console.log('Deploying EscrowSM contract...');
-    console.log(`Contract Address: ${escrowSM.address.toString()}`);
-    console.log(`Ziver Treasury Address: ${ZIVER_TREASURY_ADDRESS.toString()}`);
-
-    // Send the deploy transaction
-    await escrowSM.send(
-        provider.sender(),
-        {
-            value: toNano('0.1'), // Amount of TON to send for deployment and initial storage
-        },
-        {
-            $$type: 'Deploy',
-            queryId: 0n,
-        },
-    );
-
+    // Wait for the contract to be deployed
     await provider.waitForDeploy(escrowSM.address);
 
     console.log('EscrowSM contract deployed successfully!');
+    console.log(`Contract Address: ${escrowSM.address.toString()}`);
 }
