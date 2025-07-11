@@ -92,21 +92,30 @@ def claim_zp(db: Session, user: models.User):
 
 
 def upgrade_miner(
-    db: Session, user: models.User, upgrade_req: mining_schemas.MinerUpgradeRequest
+    db: Session, user: models.User, upgrade_req: >
 ):
-    """Upgrades the user's miner capabilities based on ZP cost."""
+    """Upgrades the user's miner capabilities bas>
     upgrade_costs = {
         "mining_speed": {
-            1: {"cost_zp": 100, "value": 15},
-            2: {"cost_zp": 250, "value": 20},
+            1: {"cost_zp": 150, "value": 15},
+            2: {"cost_zp": 450, "value": 20},
+            3: {"cost_zp": 700, "value": 30},
+            4: {"cost_zp": 1000, "value": 50},
+            5: {"cost_zp": 2500, "value": 100},
         },
         "mining_capacity": {
-            1: {"cost_zp": 100, "value": 75},
-            2: {"cost_zp": 250, "value": 100},
+            1: {"cost_zp": 200, "value": 75},
+            2: {"cost_zp": 350, "value": 100},
+            3: {"cost_zp": 650, "value": 200},
+            4: {"cost_zp": 850, "value": 350},
+            5: {"cost_zp": 1350, "value": 550},
         },
         "mining_hours": {
-            1: {"cost_zp": 100, "value": 6},
-            2: {"cost_zp": 250, "value": 8},
+            1: {"cost_zp": 250, "value": 3},
+            2: {"cost_zp": 500, "value": 4},
+            3: {"cost_zp": 700, "value": 5},
+            4: {"cost_zp": 1000, "value": 6},
+            5: {"cost_zp": 1650, "value": 7},
         },
     }
 
