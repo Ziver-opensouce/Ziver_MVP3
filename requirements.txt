@@ -1,6 +1,6 @@
 fastapi
-uvicorn[standard]
-pydantic==2.7.1 # Specify version for consistency
+uvicorn
+pydantic
 pydantic-settings==2.2.1 # New dependency for BaseSettings
 python-dotenv
 sqlalchemy==2.0.29 # Specify version
