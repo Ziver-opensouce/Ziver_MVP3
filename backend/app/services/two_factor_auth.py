@@ -1,60 +1,65 @@
-# backend/app/services/two_factor_auth.py
+"""
+Service layer for handling all Two-Factor Authentication (2FA) logic,
+including enabling, confirming, and disabling TOTP for users.
+"""
+import io
+from base64 import b64encode
 
 import pyotp
 import qrcode
-import io
-from base64 import b64encode
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.db import models
+
 from app.core.config import settings
-from datetime import datetime, timezone
+from app.db import models
+
 
 def generate_2fa_secret() -> str:
     """Generates a random base32 secret for TOTP."""
     return pyotp.random_base32()
 
+
 def get_totp_uri(secret: str, user_email: str) -> str:
     """Generates the OTPAuth URI for authenticator apps."""
-    # The 'issuer_name' is your app's name, 'Ziver'
     return pyotp.totp.TOTP(secret).provisioning_uri(
-        name=user_email,
-        issuer_name=settings.APP_NAME
+        name=user_email, issuer_name=settings.APP_NAME
     )
 
+
 def verify_totp_code(secret: str, code: str) -> bool:
-    """Verifies a TOTP code."""
-    if not secret: # Should not happen if 2FA is enabled
+    """
+    Verifies a TOTP code against the user's secret.
+    Allows for a 30-second time drift.
+    """
+    if not secret:
         return False
     totp = pyotp.TOTP(secret)
-    # Drift is for time synchronization tolerance (e.g., 30 seconds before or after current time)
-    # interval is typically 30 seconds for TOTP
-    return totp.verify(code, valid_window=1) # valid_window=1 allows one step (30s) drift
+    return totp.verify(code, valid_window=1)
+
 
 def enable_2fa_for_user(db: Session, user: models.User):
     """
-    Generates a 2FA secret and returns the QR code image for the user to scan.
-    The secret is saved, but 2FA is not marked 'enabled' until confirmed.
+    Generates a 2FA secret and returns data for QR code generation.
+    The secret is saved temporarily, but 2FA is not enabled until confirmed.
     """
     if user.is_2fa_enabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA is already enabled for this account."
+            detail="2FA is already enabled for this account.",
         )
     if user.two_fa_secret:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA setup already initiated. Please confirm or disable existing setup."
+            detail="2FA setup already initiated. Please confirm or disable the existing setup.",
         )
 
-
     secret = generate_2fa_secret()
-    user.two_fa_secret = secret # Save the secret
+    user.two_fa_secret = secret
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    # Generate QR code as base64 image (for frontend display)
+    # Generate QR code as a base64 data URL for the frontend
     totp_uri = get_totp_uri(secret, user.email)
     img = qrcode.make(totp_uri)
     buf = io.BytesIO()
@@ -63,23 +68,21 @@ def enable_2fa_for_user(db: Session, user: models.User):
 
     return {
         "secret": secret,
-        "qr_code_image": f"data:image/png;base64,{qr_code_base64}", # Data URL format
-        "message": "Scan this QR code with your authenticator app and confirm with a code."
+        "qr_code_image": f"data:image/png;base64,{qr_code_base64}",
+        "message": "Scan this QR code with your authenticator app and confirm with a code.",
     }
 
+
 def confirm_2fa_setup(db: Session, user: models.User, code: str) -> bool:
-    """
-    Confirms 2FA setup by verifying the first code from the user.
-    """
+    """Confirms and activates 2FA setup by verifying the first code."""
     if user.is_2fa_enabled:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA is already enabled."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="2FA is already enabled."
         )
     if not user.two_fa_secret:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA setup not initiated. Please enable 2FA first."
+            detail="2FA setup has not been initiated. Please enable 2FA first.",
         )
 
     if verify_totp_code(user.two_fa_secret, code):
@@ -88,27 +91,26 @@ def confirm_2fa_setup(db: Session, user: models.User, code: str) -> bool:
         db.commit()
         db.refresh(user)
         return True
-    else:
-        # Important: do not rollback the secret, allow user to try again
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid 2FA code. Please try again."
-        )
+
+    # Pylint suggestion: No need for 'else' after a return
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid 2FA code. Please try again.",
+    )
+
 
 def disable_2fa_for_user(db: Session, user: models.User, code: str) -> bool:
-    """
-    Disables 2FA for a user after verifying a code.
-    """
+    """Disables 2FA for a user after verifying a current code."""
     if not user.is_2fa_enabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA is not enabled for this user."
+            detail="2FA is not enabled for this user.",
         )
 
     if not verify_totp_code(user.two_fa_secret, code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid 2FA code. 2FA not disabled."
+            detail="Invalid 2FA code. 2FA not disabled.",
         )
 
     user.two_fa_secret = None
