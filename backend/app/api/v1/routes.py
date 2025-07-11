@@ -70,7 +70,8 @@ def register_user(user: user_schemas.UserCreate, db: Annotated[Session, Depends(
     
     # Handle optional handles for unique constraint
     if user.telegram_handle:
-        if db.query(models.User).filter(models.User.telegram_handle == user.telegram_handle).first():
+        normalized_tg = user.telegram_handle.lower()
+    if db.query(models.User).filter(models.User.telegram_handle == normalized_tg).first():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Telegram handle already taken")
     if user.twitter_handle:
         if db.query(models.User).filter(models.User.twitter_handle == user.twitter_handle).first():
