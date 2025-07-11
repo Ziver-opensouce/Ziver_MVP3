@@ -6,10 +6,13 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MiningPage from './pages/MiningPage';
+import TasksPage from './pages/TasksPage';         // <-- IMPORT
+import MicroJobsPage from './pages/MicroJobsPage'; // <-- IMPORT
+import ProfilePage from './pages/ProfilePage';     // <-- IMPORT
 
 // Import the layout and protection components
 import ProtectedRoute from './components/layout/ProtectedRoute';
-import MainAppLayout from './components/layout/MainAppLayout'; // We will create this next
+import MainAppLayout from './components/layout/MainAppLayout';
 
 function App() {
   return (
@@ -20,7 +23,6 @@ function App() {
       <Route path="/register" element={<RegisterPage />} />
 
       {/* === Protected Application Routes === */}
-      {/* All app routes will be nested under /app and will have the main layout */}
       <Route 
         path="/app" 
         element={
@@ -29,14 +31,11 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* The "index" route is the default page for /app */}
         <Route index element={<MiningPage />} /> 
         <Route path="mining" element={<MiningPage />} />
-        
-        {/* We will create these page components soon */}
-        {/* <Route path="tasks" element={<TasksPage />} /> */}
-        {/* <Route path="jobs" element={<MicroJobsPage />} /> */}
-        {/* <Route path="profile" element={<ProfilePage />} /> */}
+        <Route path="tasks" element={<TasksPage />} />         {/* <-- ADD ROUTE */}
+        <Route path="jobs" element={<MicroJobsPage />} />       {/* <-- ADD ROUTE */}
+        <Route path="profile" element={<ProfilePage />} />       {/* <-- ADD ROUTE */}
       </Route>
       
     </Routes>
