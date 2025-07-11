@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { loginUser } from '../api/services';
+import { useAuth } from '../context/AuthContext'; // <-- IMPORT our useAuth hook
+import { useNavigate } from 'react-router-dom';   // <-- IMPORT for redirection
 
-// We are using placeholder components for now. We will install MUI next.
-// For now, these will just look like standard HTML elements.
+// Using placeholder components for now
 const Container = ({ children }) => <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>{children}</div>;
 const TextField = (props) => <input {...props} style={{ width: '100%', padding: '10px', marginBottom: '15px', boxSizing: 'border-box' }} />;
 const Button = (props) => <button {...props} style={{ width: '100%', padding: '12px', background: '#00E676', color: 'black', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}>{props.children}</button>;
@@ -18,22 +18,23 @@ function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { login } = useAuth(); // <-- USE the context to get the login function
+  const navigate = useNavigate(); // <-- Initialize navigate for redirection
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setLoading(true);
 
     const loginData = {
-      username: email, // Your backend expects 'username' for the form data
+      username: email,
       password: password,
       two_fa_code: twoFaCode || null,
     };
 
     try {
-      const data = await loginUser(loginData);
-      // TODO: Handle successful login
-      // We will add logic here later to save the token and redirect the user.
-      alert('Login successful! Token: ' + data.access_token);
+      await login(loginData); // <-- CALL the login function from our context
+      navigate('/'); // <-- REDIRECT to the main page on success
     } catch (err) {
       setError(err.response?.data?.detail || 'An unexpected error occurred.');
     } finally {
@@ -75,4 +76,3 @@ function LoginPage() {
 }
 
 export default LoginPage;
-
