@@ -106,9 +106,9 @@ def upgrade_miner(
         "mining_capacity": {
             1: {"cost_zp": 200, "value": 75},
             2: {"cost_zp": 350, "value": 100},
-            3: {"cost_zp": 650, "value": 200},
-            4: {"cost_zp": 850, "value": 350},
-            5: {"cost_zp": 1350, "value": 550},
+            3: {"cost_zp": 650, "value": 500},
+            4: {"cost_zp": 850, "value": 1000},
+            5: {"cost_zp": 1350, "value": 1800},
         },
         "mining_hours": {
             1: {"cost_zp": 250, "value": 3},
