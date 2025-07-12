@@ -92,9 +92,9 @@ def claim_zp(db: Session, user: models.User):
 
 
 def upgrade_miner(
-    db: Session, user: models.User, upgrade_req: >
+    db: Session, user: models.User, upgrade_req: mining_schemas.MinerUpgradeRequest
 ):
-    """Upgrades the user's miner capabilities bas>
+    """Upgrades the user's miner capabilities based on ZP cost."""
     upgrade_costs = {
         "mining_speed": {
             1: {"cost_zp": 150, "value": 15},
@@ -161,4 +161,5 @@ def upgrade_miner(
         "new_zp_balance": user.zp_balance,
         "cost_in_zp": cost_zp,
     }
+
 
