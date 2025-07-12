@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { registerUser } from '../api/services';
-import { useNavigate } from 'react-router-dom';
 
-// Using the same placeholder components for now
-const Container = ({ children }) => <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>{children}</div>;
-const TextField = (props) => <input {...props} style={{ width: '100%', padding: '10px', marginBottom: '15px', boxSizing: 'border-box' }} />;
-const Button = (props) => <button {...props} style={{ width: '100%', padding: '12px', background: '#00E676', color: 'black', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}>{props.children}</button>;
-const Typography = ({ children, variant }) => <h2 style={{ textAlign: 'center', color: '#00E676' }}>{children}</h2>;
-
+// Import MUI components
+import { Box, Button, Container, TextField, Typography, CircularProgress, Alert } from '@mui/material';
 
 function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -33,7 +29,7 @@ function RegisterPage() {
         try {
             await registerUser(formData);
             alert('Registration successful! Please login.');
-            navigate('/login'); // Redirect to login page after successful registration
+            navigate('/login');
         } catch (err) {
             setError(err.response?.data?.detail || 'An unexpected error occurred.');
         } finally {
@@ -42,24 +38,90 @@ function RegisterPage() {
     };
 
     return (
-        <Container>
-            <Typography variant="h4">Create Your Ziver Account</Typography>
-            <form onSubmit={handleSubmit}>
-                <TextField name="full_name" type="text" placeholder="Full Name" onChange={handleChange} required />
-                <TextField name="email" type="email" placeholder="Email" onChange={handleChange} required />
-                <TextField name="password" type="password" placeholder="Password (min 8 characters)" onChange={handleChange} required />
-                <TextField name="telegram_handle" type="text" placeholder="Telegram Handle (optional)" onChange={handleChange} />
-                <TextField name="twitter_handle" type="text" placeholder="Twitter Handle (optional)" onChange={handleChange} />
+        <Container component="main" maxWidth="xs">
+            <Box
+                sx={{
+                    marginTop: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                }}
+            >
+                <Typography component="h1" variant="h4" color="primary" gutterBottom>
+                    Create Your Ziver Account
+                </Typography>
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        id="full_name"
+                        label="Full Name"
+                        name="full_name"
+                        autoComplete="name"
+                        autoFocus
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        id="email"
+                        label="Email Address"
+                        name="email"
+                        autoComplete="email"
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        name="password"
+                        label="Password"
+                        type="password"
+                        id="password"
+                        autoComplete="new-password"
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        margin="normal"
+                        fullWidth
+                        name="telegram_handle"
+                        label="Telegram Handle (optional)"
+                        id="telegram_handle"
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        margin="normal"
+                        fullWidth
+                        name="twitter_handle"
+                        label="Twitter Handle (optional)"
+                        id="twitter_handle"
+                        onChange={handleChange}
+                    />
+                    
+                    {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
 
-                {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
-
-                <Button type="submit" disabled={loading}>
-                    {loading ? 'Creating Account...' : 'Register'}
-                </Button>
-            </form>
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        disabled={loading}
+                        sx={{ mt: 3, mb: 2, py: 1.5, fontWeight: 'bold' }}
+                    >
+                        {loading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
+                    </Button>
+                    <Typography variant="body2" align="center">
+                        Already have an account?{' '}
+                        <Link to="/login" style={{ color: '#00E676' }}>
+                            Sign In
+                        </Link>
+                    </Typography>
+                </Box>
+            </Box>
         </Container>
     );
 }
 
 export default RegisterPage;
-
