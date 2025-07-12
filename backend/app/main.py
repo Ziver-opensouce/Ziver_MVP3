@@ -20,9 +20,9 @@ app = FastAPI(
     title="Ziver Backend API",
     description="API for Ziver: Gamifying Web3 Engagement & Empowering the TON Ecosystem.",
     version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # Configure Cross-Origin Resource Sharing (CORS)
@@ -37,9 +37,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include all the API endpoints from the v1 router
-# All routes will be prefixed with /api/v1
-app.include_router(v1_routes.router, prefix="/api/v1")
+# Include all the API endpoints from the v1 router without any prefix
+app.include_router(v1_routes.router)
 
 
 @app.get("/")
@@ -48,5 +47,5 @@ async def root():
     Root endpoint for a basic health check.
     """
     return {
-        "message": "Welcome to Ziver Backend API! Visit /api/docs for the interactive API documentation."
+        "message": "Welcome to Ziver Backend API! Visit /docs for the interactive API documentation."
     }
