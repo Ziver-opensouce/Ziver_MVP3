@@ -139,9 +139,12 @@ def login_for_access_token(
     db: Annotated[Session, Depends(database.get_db)],
 ):
     """
-    Authenticates a user with password and optional 2FA, returns JWT token.
+    Authenticates a user with email and password, returns JWT token.
+    Handles optional 2FA.
     """
-    user = db.query(models.User).filter(models.User.email == login_data.username).first()
+    # The fix is on this line: .username is changed to .email
+    user = db.query(models.User).filter(models.User.email == login_data.email).first()
+
     if not user or not security.verify_password(
         login_data.password, user.hashed_password
     ):
