@@ -1,38 +1,52 @@
+"""
+Main entry point for the Ziver Backend API application.
+
+This file initializes the FastAPI app, sets up CORS middleware,
+creates database tables, and includes the API routers.
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.database import Base, engine
-from app.api.v1 import routes as v1_routes
 
-# Create database tables (if they don't exist) when the application starts
-# This is suitable for development; for production, use Alembic migrations.
+from app.api.v1 import routes as v1_routes
+from app.db.database import Base, engine
+
+# This creates all the database tables defined in your models
+# based on the SQLAlchemy Base metadata. It's suitable for development.
+# For production, it's recommended to use a migration tool like Alembic.
 Base.metadata.create_all(bind=engine)
 
+# Initialize the FastAPI application instance
 app = FastAPI(
     title="Ziver Backend API",
-    description="API for Ziver: Gamifying Web3 Engagement & Empowering the TON Ecosystem (Phase 1 MVP)",
+    description="API for Ziver: Gamifying Web3 Engagement & Empowering the TON Ecosystem.",
     version="1.0.0",
-    docs_url="/api/docs", # Custom docs URL
-    redoc_url="/api/redoc", # Custom redoc URL
-    openapi_url="/api/openapi.json" # Custom openapi.json URL
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
-# CORS configuration
-# Adjust `allow_origins` to your frontend's URL(s) in production.
-# For development, "*" allows all origins.
+# Configure Cross-Origin Resource Sharing (CORS)
+# This allows your frontend application to make requests to this backend.
+# For development, allow_origins=["*"] is fine.
+# For production, you should restrict this to your frontend's domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Example: ["http://localhost:3000", "https://your-frontend-domain.com"]
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], # Allow all methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"], # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Include the API router
+# Include all the API endpoints from the v1 router
+# All routes will be prefixed with /api/v1
 app.include_router(v1_routes.router, prefix="/api/v1")
+
 
 @app.get("/")
 async def root():
     """
     Root endpoint for a basic health check.
     """
-    return {"message": "Welcome to Ziver Backend API! Visit /api/v1/docs for interactive API documentation."}
+    return {
+        "message": "Welcome to Ziver Backend API! Visit /api/docs for the interactive API documentation."
+    }
