@@ -76,23 +76,26 @@ const int STATE_REFUNDED = 7;
 ;; Getters (off-chain, view methods)
 ;; ============================================
 slice get_ziver_treasury_address() method_id {
-    var (ziver_treasury_address, _, _) = load_data();
+    ;; FIX: Replaced _ with named variables
+    var (ziver_treasury_address, cell tasks_dict, int fees) = load_data();
     return ziver_treasury_address;
 }
 
 int get_accumulated_fees() method_id {
-    var (_, _, accumulated_ziver_fees) = load_data();
+    ;; FIX: Replaced _ with named variables
+    var (slice ziver_treasury_address, cell tasks_dict, accumulated_ziver_fees) = load_data();
     return accumulated_ziver_fees;
 }
 
 (slice, int, int, cell, int, int, int, int, int, int, slice, int, cell, int) get_task_details(int task_id) method_id {
-    (_, cell tasks_dict, _) = load_data();
+    ;; FIX: Replaced _ with named variables
+    (slice ziver_treasury_address, cell tasks_dict, int fees) = load_data();
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
 
     if (~ found) {
         return (null(), 0, 0, null(), 0, 0, 0, 0, 0, 0, null(), 0, null(), 0);
     }
-    
+
     slice s = c.begin_parse();
     return (s~load_msg_addr(), s~load_coins(), s~load_uint(32), s~load_dict(), s~load_uint(32), s~load_uint(256), s~load_uint(256), s~load_uint(64), s~load_coins(), s~load_uint(8), s~load_msg_addr(), s~load_uint(8), s~load_dict(), s~load_uint(64));
 }
@@ -107,10 +110,10 @@ int get_accumulated_fees() method_id {
 
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
-    
+
     cell msg_body_cell = in_msg_full~load_ref();
     slice in_msg_slice = msg_body_cell.begin_parse();
-    
+
     int op = in_msg_slice~load_uint(32);
     int query_id = in_msg_slice~load_uint(64);
 
@@ -120,7 +123,7 @@ int get_accumulated_fees() method_id {
         cell details_cell = in_msg_slice~load_ref();
         slice details = details_cell.begin_parse();
         int task_id = details~load_uint(64);
-        
+
         (cell task_cell, int found) = udict_get_ref?(tasks_dict, 64, task_id);
         throw_if(error_task_already_exists, found);
 
@@ -156,7 +159,7 @@ int get_accumulated_fees() method_id {
         send_raw_message(withdraw_msg, 1);
         return ();
     }
-    
+
     ;; All other operations are task-specific
     int task_id = in_msg_slice~load_uint(64);
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
@@ -177,16 +180,16 @@ int get_accumulated_fees() method_id {
     int current_state = s~load_uint(8);
     cell proof_submission_map = s~load_dict();
     int last_query_id = s~load_uint(64);
-    
+
     throw_if(error_replay, query_id == last_query_id);
 
     if (op == op_deposit_funds) {
         throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
         throw_if(error_invalid_state, current_state != STATE_TASK_SET_AND_FUNDS_PENDING);
-        
+
         int expected_total_funds = payment_per_performer_amount * number_of_performers_needed;
         int new_total_funds = current_total_escrowed_funds + msg_value;
-        
+
         if (new_total_funds >= expected_total_funds) {
             current_state = STATE_ACTIVE;
             current_total_escrowed_funds = expected_total_funds;
@@ -212,7 +215,9 @@ int get_accumulated_fees() method_id {
         slice performer_address = in_msg_slice~load_msg_addr();
         throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
         throw_if(error_invalid_state, (current_state != STATE_ACTIVE) & (current_state != STATE_PENDING_VERIFICATION));
-        (cell _, int is_completed) = udict_get_ref?(performers_completed, 256, slice_hash(performer_address));
+        
+        ;; FIX: Replaced _ with a named variable
+        (cell dummy_cell, int is_completed) = udict_get_ref?(performers_completed, 256, slice_hash(performer_address));
         throw_if(error_already_completed_performer, is_completed);
 
         performers_completed~udict_set_ref(256, slice_hash(performer_address), begin_cell().end_cell());
@@ -221,9 +226,9 @@ int get_accumulated_fees() method_id {
         int fee_amount = (payment_per_performer_amount * ziver_fee_percentage) / 100;
         current_total_escrowed_funds -= payment_per_performer_amount;
         accumulated_ziver_fees += fee_amount;
-        
+
         current_state = (completed_performers_count >= number_of_performers_needed) ? STATE_SETTLED : STATE_PENDING_VERIFICATION;
-        
+
         cell performer_msg = begin_cell().store_uint(0x18, 6).store_slice(performer_address).store_coins(payment_per_performer_amount - fee_amount).store_uint(0, 1).end_cell();
         send_raw_message(performer_msg, 1);
 
@@ -258,11 +263,11 @@ int get_accumulated_fees() method_id {
     } elseif (op == op_raise_dispute) {
         throw_if(error_invalid_state, (current_state != STATE_ACTIVE) & (current_state != STATE_PENDING_VERIFICATION));
         current_state = STATE_DISPUTED;
-    
+
     } elseif (op == op_submit_proof) {
          ;; Not fully implemented in this version, but op code exists
          ;; For now, this op does nothing to the state besides updating query_id
-    
+
     } else {
         throw(error_unknown_opcode);
     }
