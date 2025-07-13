@@ -1,3 +1,5 @@
+// Final, Corrected wrappers/EscrowSM.ts
+
 import {
     Address,
     beginCell,
@@ -8,7 +10,6 @@ import {
     Dictionary,
     Sender,
     SendMode,
-    toNano,
 } from '@ton/core';
 import { EscrowSMData, Opcodes, TaskDetails } from '../EscrowSM.types';
 import EscrowSMCompiled from '../build/EscrowSM.compiled.json';
@@ -45,7 +46,6 @@ export class EscrowSM implements Contract {
         });
     }
 
-    // NOTE: Make sure Opcodes.setTaskDetails matches the value of op_send_task_details in your .fc file
     async sendSetTaskDetails(
         provider: ContractProvider,
         via: Sender,
@@ -77,7 +77,7 @@ export class EscrowSM implements Contract {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.setTaskDetails, 32) // This should be op_send_task_details
+                .storeUint(Opcodes.sendTaskDetails, 32)
                 .storeUint(opts.queryID ?? 0, 64)
                 .storeRef(detailsCell)
                 .endCell(),
@@ -184,35 +184,51 @@ export class EscrowSM implements Contract {
 
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
         const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
+        const stack = result.stack;
 
-        // FIX: Use readAddressOpt() to handle the case where the task is not found and the address is null.
-        const taskPosterAddress = result.stack.readAddressOpt();
+        const taskPosterAddress = stack.readAddressOpt();
         if (!taskPosterAddress) {
             return null; // Task not found
         }
-        
-        const performersCompletedDict = result.stack.readCellOpt();
-        const proofSubmissionMapDict = result.stack.readCellOpt();
+
+        const paymentPerPerformerAmount = stack.readBigNumber();
+        const numberOfPerformersNeeded = stack.readBigNumber();
+
+        const performersCompletedCell = stack.readCellOpt();
+        const completedPerformersCount = stack.readBigNumber();
+        const taskDescriptionHash = stack.readBigNumber();
+        const taskGoalHash = stack.readBigNumber();
+        const expiryTimestamp = stack.readBigNumber();
+        const totalEscrowedFunds = stack.readBigNumber();
+        const ziverFeePercentage = BigInt(stack.readNumber());
+        const moderatorAddress = stack.readAddress();
+        const currentState = stack.readNumber();
+        const proofSubmissionMapCell = stack.readCellOpt();
+        const lastQueryId = stack.readBigNumber();
+
+        const performersCompleted = performersCompletedCell
+            ? performersCompletedCell.beginParse().loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
+            : Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell());
+
+        const proofSubmissionMap = proofSubmissionMapCell
+            ? proofSubmissionMapCell.beginParse().loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
+            : Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell());
 
         return {
-            taskPosterAddress: taskPosterAddress,
-            paymentPerPerformerAmount: result.stack.readBigNumber(),
-            numberOfPerformersNeeded: result.stack.readBigNumber(),
-            performersCompleted: performersCompletedDict 
-                ? Dictionary.loadDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell(), performersCompletedDict)
-                : Dictionary.empty(),
-            completedPerformersCount: result.stack.readBigNumber(),
-            taskDescriptionHash: result.stack.readBigNumber(),
-            taskGoalHash: result.stack.readBigNumber(),
-            expiryTimestamp: result.stack.readBigNumber(),
-            totalEscrowedFunds: result.stack.readBigNumber(),
-            ziverFeePercentage: BigInt(result.stack.readNumber()),
-            moderatorAddress: result.stack.readAddress(),
-            currentState: result.stack.readNumber(),
-            proofSubmissionMap: proofSubmissionMapDict
-                ? Dictionary.loadDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell(), proofSubmissionMapDict)
-                : Dictionary.empty(),
-            lastQueryId: result.stack.readBigNumber(),
+            taskPosterAddress,
+            paymentPerPerformerAmount,
+            numberOfPerformersNeeded,
+            performersCompleted,
+            completedPerformersCount,
+            taskDescriptionHash,
+            taskGoalHash,
+            expiryTimestamp,
+            totalEscrowedFunds,
+            ziverFeePercentage,
+            moderatorAddress,
+            currentState,
+            proofSubmissionMap,
+            lastQueryId,
         };
     }
 
