@@ -147,14 +147,19 @@ slice get_task_details(int task_id) method_id {
     ;; 1. Task Creation: Poster creates a new task
     ;; ============================================
     if (op == op_send_task_details) {
-        int task_id = in_msg_slice~load_uint(64);
-        int payment_per_performer_amount = in_msg_slice~load_coins();
-        int number_of_performers_needed = in_msg_slice~load_uint(32);
-        int task_description_hash = in_msg_slice~load_uint(256);
-        int task_goal_hash = in_msg_slice~load_uint(256);
-        int expiry_timestamp = in_msg_slice~load_uint(64);
-        int ziver_fee_percentage = in_msg_slice~load_uint(8);
-        slice moderator_address = in_msg_slice~load_msg_addr();
+                ;; Load the task details from the reference cell
+        cell details_cell = in_msg_slice~load_ref();
+        slice details = details_cell.begin_parse();
+
+        int task_id = details~load_uint(64);
+        int payment_per_performer_amount = details~load_coins();
+        int number_of_performers_needed = details~load_uint(32);
+        int task_description_hash = details~load_uint(256);
+        int task_goal_hash = details~load_uint(256);
+        int expiry_timestamp = details~load_uint(64);
+        int ziver_fee_percentage = details~load_uint(8);
+        slice moderator_address = details~load_msg_addr();
+
 
         ;; Fix for the syntax error: Give the ignored variable a name.
         (cell task_cell, int found) = udict_get_ref?(tasks_dict, 64, task_id);
