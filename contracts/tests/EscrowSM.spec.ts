@@ -64,7 +64,8 @@ describe('EscrowSM', () => {
             .endCell();
             
         const setTaskBody = beginCell()
-            .storeUint(Opcodes.setTaskDetails, 32)
+    .storeUint(Opcodes.sendTaskDetails, 32) // Correct, aligned name
+
             .storeUint(1n, 64) // queryID
             .storeRef(detailsCell)
             .endCell();
