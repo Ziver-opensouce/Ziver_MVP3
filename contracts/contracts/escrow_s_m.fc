@@ -123,7 +123,7 @@ slice get_task_details(int task_id) method_id {
 ;; Internal Message Handler (all logic here)
 ;; ============================================
 () recv_internal(int my_balance, int msg_value, cell in_msg_full_cell, slice in_msg_full) impure {
-    ;; FIX 1: Added this check for empty messages (like on deployment)
+    ;; First, handle deploy messages which have an empty body.
     if (in_msg_full.slice_empty?()) {
         return ();
     }
@@ -131,10 +131,12 @@ slice get_task_details(int task_id) method_id {
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
     
-    slice in_msg_slice = in_msg_full;
+    ;; Load the body of the message. In the test environment, the body is in a reference cell.
+    cell msg_body_cell = in_msg_full~load_ref();
+    slice in_msg_slice = msg_body_cell.begin_parse();
     
-    ;; FIX 2: Added this check for messages that are too short to have an opcode
-    if (in_msg_slice.slice_bits() < (32 + 64)) { ;; op (32) + query_id (64)
+    ;; Check if the body has enough data for an operation code and query_id
+    if (in_msg_slice.slice_bits() < (32 + 64)) {
         return ();
     }
 
