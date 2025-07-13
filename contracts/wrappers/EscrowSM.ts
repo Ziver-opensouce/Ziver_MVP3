@@ -45,6 +45,7 @@ export class EscrowSM implements Contract {
         });
     }
 
+    // NOTE: Make sure Opcodes.setTaskDetails matches the value of op_send_task_details in your .fc file
     async sendSetTaskDetails(
         provider: ContractProvider,
         via: Sender,
@@ -76,7 +77,7 @@ export class EscrowSM implements Contract {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.setTaskDetails, 32)
+                .storeUint(Opcodes.setTaskDetails, 32) // This should be op_send_task_details
                 .storeUint(opts.queryID ?? 0, 64)
                 .storeRef(detailsCell)
                 .endCell(),
@@ -90,19 +91,19 @@ export class EscrowSM implements Contract {
             body: beginCell()
                 .storeUint(Opcodes.depositFunds, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .endCell(),
         });
     }
 
-    async sendVerifyTaskCompletion(provider: ContractProvider, via: Sender, opts: { taskId: bigint; performerAddress: Address; value: bigint; queryID?: bigint }) {
+    async sendVerifyTaskCompletion( provider: ContractProvider, via: Sender, opts: { taskId: bigint; performerAddress: Address; value: bigint; queryID?: bigint }) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.verifyTaskCompletion, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .storeAddress(opts.performerAddress)
                 .endCell(),
         });
@@ -115,7 +116,7 @@ export class EscrowSM implements Contract {
             body: beginCell()
                 .storeUint(Opcodes.submitProof, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .storeUint(opts.proofHash, 256)
                 .endCell(),
         });
@@ -128,7 +129,7 @@ export class EscrowSM implements Contract {
             body: beginCell()
                 .storeUint(Opcodes.raiseDispute, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .endCell(),
         });
     }
@@ -140,7 +141,7 @@ export class EscrowSM implements Contract {
             body: beginCell()
                 .storeUint(Opcodes.resolveDispute, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .storeAddress(opts.winnerAddress)
                 .endCell(),
         });
@@ -153,7 +154,7 @@ export class EscrowSM implements Contract {
             body: beginCell()
                 .storeUint(Opcodes.cancelTaskAndRefund, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .endCell(),
         });
     }
@@ -176,49 +177,44 @@ export class EscrowSM implements Contract {
             body: beginCell()
                 .storeUint(Opcodes.expireTask, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64) // CORRECTED
+                .storeUint(opts.taskId, 64)
                 .endCell(),
         });
     }
 
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
-    const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
+        const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
 
-    // The stack will be empty if the task is not found (and our getter returns nulls)
-    // The first element, taskPosterAddress, will be a null slice.
-    if (result.stack.readCell().isNull) {
-        return null;
+        // FIX: Use readAddressOpt() to handle the case where the task is not found and the address is null.
+        const taskPosterAddress = result.stack.readAddressOpt();
+        if (!taskPosterAddress) {
+            return null; // Task not found
+        }
+        
+        const performersCompletedDict = result.stack.readCellOpt();
+        const proofSubmissionMapDict = result.stack.readCellOpt();
+
+        return {
+            taskPosterAddress: taskPosterAddress,
+            paymentPerPerformerAmount: result.stack.readBigNumber(),
+            numberOfPerformersNeeded: result.stack.readBigNumber(),
+            performersCompleted: performersCompletedDict 
+                ? Dictionary.loadDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell(), performersCompletedDict)
+                : Dictionary.empty(),
+            completedPerformersCount: result.stack.readBigNumber(),
+            taskDescriptionHash: result.stack.readBigNumber(),
+            taskGoalHash: result.stack.readBigNumber(),
+            expiryTimestamp: result.stack.readBigNumber(),
+            totalEscrowedFunds: result.stack.readBigNumber(),
+            ziverFeePercentage: BigInt(result.stack.readNumber()),
+            moderatorAddress: result.stack.readAddress(),
+            currentState: result.stack.readNumber(),
+            proofSubmissionMap: proofSubmissionMapDict
+                ? Dictionary.loadDirect(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell(), proofSubmissionMapDict)
+                : Dictionary.empty(),
+            lastQueryId: result.stack.readBigNumber(),
+        };
     }
-
-    // Since we confirmed it's not null, we can re-read it as an address.
-    const taskPosterAddress = result.stack.readAddress();
-
-    return {
-        taskPosterAddress: taskPosterAddress,
-        paymentPerPerformerAmount: result.stack.readBigNumber(),
-        numberOfPerformersNeeded: result.stack.readBigNumber(),
-        // For dictionaries, we read the cell from the stack
-        performersCompleted: Dictionary.loadDirect(
-            Dictionary.Keys.BigUint(256),
-            Dictionary.Values.Cell(),
-            result.stack.readCellOpt()
-        ),
-        completedPerformersCount: result.stack.readBigNumber(),
-        taskDescriptionHash: result.stack.readBigNumber(),
-        taskGoalHash: result.stack.readBigNumber(),
-        expiryTimestamp: result.stack.readBigNumber(),
-        totalEscrowedFunds: result.stack.readBigNumber(),
-        ziverFeePercentage: BigInt(result.stack.readNumber()),
-        moderatorAddress: result.stack.readAddress(),
-        currentState: result.stack.readNumber(),
-        proofSubmissionMap: Dictionary.loadDirect(
-            Dictionary.Keys.BigUint(256),
-            Dictionary.Values.Cell(),
-            result.stack.readCellOpt()
-        ),
-        lastQueryId: result.stack.readBigNumber(),
-    };
-}
 
     async getZiverTreasuryAddress(provider: ContractProvider): Promise<Address> {
         const { stack } = await provider.get('get_ziver_treasury_address', []);
