@@ -137,7 +137,8 @@ int get_accumulated_fees() method_id {
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
     
-    slice in_msg_slice = in_msg_full.begin_parse();
+        cell msg_body_cell = in_msg_full~load_ref();
+    slice in_msg_slice = msg_body_cell.begin_parse();
     if (in_msg_slice.slice_bits() < 32) {
         return();
     }
