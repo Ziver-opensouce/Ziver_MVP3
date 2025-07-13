@@ -139,7 +139,7 @@ int get_accumulated_fees() method_id {
             .store_dict(new_dict())
             .store_uint(query_id, 64);
 
-        ;; FIX: Use explicit assignment for dictionary updates
+        ;; FIX: Use explicit assignment for dictionary updates to ensure state is saved.
         tasks_dict = udict_set_ref(tasks_dict, 64, task_id, c.end_cell());
         save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
         return ();
@@ -187,8 +187,7 @@ int get_accumulated_fees() method_id {
         int expected_total_funds = payment_per_performer_amount * number_of_performers_needed;
         int new_total_funds = current_total_escrowed_funds + msg_value;
         
-        current_total_escrowed_funds = new_total_funds;
-
+        ;; FIX: Correct logic to handle partial deposits and overpayment refunds.
         if (new_total_funds >= expected_total_funds) {
             current_state = STATE_ACTIVE;
             current_total_escrowed_funds = expected_total_funds;
@@ -197,6 +196,8 @@ int get_accumulated_fees() method_id {
                 cell overpay_msg = begin_cell().store_uint(0x10, 6).store_slice(sender_address).store_coins(overpayment).store_uint(0, 1).end_cell();
                 send_raw_message(overpay_msg, 1);
             }
+        } else {
+            current_total_escrowed_funds = new_total_funds;
         }
 
     } elseif (op == op_expire_task) {
@@ -216,7 +217,7 @@ int get_accumulated_fees() method_id {
         (cell dummy_cell, int is_completed) = udict_get_ref?(performers_completed, 256, slice_hash(performer_address));
         throw_if(error_already_completed_performer, is_completed);
 
-        ;; FIX: Use explicit assignment for dictionary updates
+        ;; FIX: Use explicit assignment for the nested dictionary update.
         performers_completed = udict_set_ref(performers_completed, 256, slice_hash(performer_address), begin_cell().end_cell());
         completed_performers_count += 1;
 
@@ -224,10 +225,11 @@ int get_accumulated_fees() method_id {
         current_total_escrowed_funds -= payment_per_performer_amount;
         accumulated_ziver_fees += fee_amount;
 
+        ;; FIX: Use a clear if/else block for state transition.
         if (completed_performers_count >= number_of_performers_needed) {
             current_state = STATE_SETTLED;
         } else {
-             current_state = STATE_PENDING_VERIFICATION;
+            current_state = STATE_PENDING_VERIFICATION;
         }
 
         cell performer_msg = begin_cell().store_uint(0x18, 6).store_slice(performer_address).store_coins(payment_per_performer_amount - fee_amount).store_uint(0, 1).end_cell();
@@ -273,6 +275,7 @@ int get_accumulated_fees() method_id {
         throw(error_unknown_opcode);
     }
 
+    ;; Rebuild the task cell with all modified local variables.
     builder b = begin_cell()
         .store_slice(task_poster_address)
         .store_coins(payment_per_performer_amount)
@@ -289,7 +292,7 @@ int get_accumulated_fees() method_id {
         .store_dict(proof_submission_map)
         .store_uint(query_id, 64);
 
-    ;; FIX: Use explicit assignment for dictionary updates
+    ;; FIX: Use explicit assignment to update the main tasks dictionary.
     tasks_dict = udict_set_ref(tasks_dict, 64, task_id, b.end_cell());
     save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
 }
