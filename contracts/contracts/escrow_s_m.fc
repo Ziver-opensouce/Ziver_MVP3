@@ -122,20 +122,22 @@ slice get_task_details(int task_id) method_id {
 ;; ============================================
 ;; Internal Message Handler (all logic here)
 ;; ============================================
-() recv_internal(slice in_msg_full) impure {
-    ;; Now 'in_msg_full' is provided as an argument, so we can use it directly.
-    ;; The following line is no longer needed and should be deleted:
-    ;; slice in_msg_full = get_in_msg().begin_parse(); 
+() recv_internal(int my_balance, int msg_value, cell in_msg_full_cell, slice in_msg_full) impure {
+    ;; FIX 1: Added this check for empty messages (like on deployment)
+    if (in_msg_full.slice_empty?()) {
+        return ();
+    }
+
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
     
-    ;; To get the value, you need to know the message layout. Let's assume a simple layout where
-    ;; the body is not in a separate reference cell for now.
-    int msg_value = 0; ;; Blueprint handles value separately; this is a placeholder if needed.
-
-    ;; The rest of the slice is the body
     slice in_msg_slice = in_msg_full;
     
+    ;; FIX 2: Added this check for messages that are too short to have an opcode
+    if (in_msg_slice.slice_bits() < (32 + 64)) { ;; op (32) + query_id (64)
+        return ();
+    }
+
     (slice ziver_treasury_address, cell tasks_dict, int accumulated_ziver_fees) = load_data();
     
     int op = in_msg_slice~load_uint(32);
