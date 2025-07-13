@@ -95,10 +95,14 @@ describe('EscrowSM', () => {
         const payment = toNano('1');
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
-        const setTaskBody = beginCell()
-            .storeUint(Opcodes.setTaskDetails, 32).storeUint(10n, 64).storeUint(taskId, 64).storeCoins(payment) // CORRECTED
-            .storeUint(1n, 32).storeUint(0n, 256).storeUint(0n, 256).storeUint(expiry, 64) // CORRECTED
+                const detailsCell = beginCell()
+            .storeUint(taskId, 64).storeCoins(payment)
+            .storeUint(1n, 32).storeUint(0n, 256).storeUint(0n, 256).storeUint(expiry, 64)
             .storeUint(5n, 8).storeAddress(moderator.address).endCell();
+
+        const setTaskBody = beginCell()
+            .storeUint(Opcodes.setTaskDetails, 32).storeUint(10n, 64).storeRef(detailsCell).endCell();
+
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
         const depositBody = beginCell().storeUint(Opcodes.depositFunds, 32).storeUint(11n, 64).storeUint(taskId, 64).endCell();
