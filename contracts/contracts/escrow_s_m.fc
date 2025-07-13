@@ -97,7 +97,7 @@ int get_accumulated_fees() method_id {
 }
 
 ;; FIX: Corrected the getter to avoid cell underflow on "not found".
-(slice, int, int, int, int, int, int, int, int, int, slice, int, cell, int) get_task_details(int task_id) method_id {
+(slice, int, int, cell, int, int, int, int, int, int, slice, int, cell, int) get_task_details(int task_id) method_id {
     (_, cell tasks_dict, _) = load_data();
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
 
