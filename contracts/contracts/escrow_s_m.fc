@@ -146,7 +146,7 @@ slice get_task_details(int task_id) method_id {
         cell details_cell = in_msg_slice~load_ref();
         slice details = details_cell.begin_parse();
         int task_id = details~load_uint(64);
-        (cell _, int found) = udict_get_ref?(tasks_dict, 64, task_id);
+        (cell task_cell, int found) = udict_get_ref?(tasks_dict, 64, task_id);
         throw_if(error_task_already_exists, found);
 
         builder c = begin_cell()
