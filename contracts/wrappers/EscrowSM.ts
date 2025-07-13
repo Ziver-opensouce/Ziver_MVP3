@@ -182,28 +182,43 @@ export class EscrowSM implements Contract {
     }
 
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
-        const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
-        if (result.stack.remaining < 1) {
-            return null;
-        }
-        const taskSlice = result.stack.readCell().beginParse();
-        return {
-            taskPosterAddress: taskSlice.loadAddress(),
-            paymentPerPerformerAmount: taskSlice.loadCoins(),
-            numberOfPerformersNeeded: BigInt(taskSlice.loadUint(32)),
-            performersCompleted: taskSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell()),
-            completedPerformersCount: BigInt(taskSlice.loadUint(32)),
-            taskDescriptionHash: taskSlice.loadUintBig(256),
-            taskGoalHash: taskSlice.loadUintBig(256),
-            expiryTimestamp: taskSlice.loadUintBig(64),
-            totalEscrowedFunds: taskSlice.loadCoins(),
-            ziverFeePercentage: BigInt(taskSlice.loadUint(8)),
-            moderatorAddress: taskSlice.loadAddress(),
-            currentState: taskSlice.loadUint(8),
-            proofSubmissionMap: taskSlice.loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell()),
-            lastQueryId: taskSlice.loadUintBig(64),
-        };
+    const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
+
+    // The stack will be empty if the task is not found (and our getter returns nulls)
+    // The first element, taskPosterAddress, will be a null slice.
+    if (result.stack.readCell().isNull) {
+        return null;
     }
+
+    // Since we confirmed it's not null, we can re-read it as an address.
+    const taskPosterAddress = result.stack.readAddress();
+
+    return {
+        taskPosterAddress: taskPosterAddress,
+        paymentPerPerformerAmount: result.stack.readBigNumber(),
+        numberOfPerformersNeeded: result.stack.readBigNumber(),
+        // For dictionaries, we read the cell from the stack
+        performersCompleted: Dictionary.loadDirect(
+            Dictionary.Keys.BigUint(256),
+            Dictionary.Values.Cell(),
+            result.stack.readCellOpt()
+        ),
+        completedPerformersCount: result.stack.readBigNumber(),
+        taskDescriptionHash: result.stack.readBigNumber(),
+        taskGoalHash: result.stack.readBigNumber(),
+        expiryTimestamp: result.stack.readBigNumber(),
+        totalEscrowedFunds: result.stack.readBigNumber(),
+        ziverFeePercentage: BigInt(result.stack.readNumber()),
+        moderatorAddress: result.stack.readAddress(),
+        currentState: result.stack.readNumber(),
+        proofSubmissionMap: Dictionary.loadDirect(
+            Dictionary.Keys.BigUint(256),
+            Dictionary.Values.Cell(),
+            result.stack.readCellOpt()
+        ),
+        lastQueryId: result.stack.readBigNumber(),
+    };
+}
 
     async getZiverTreasuryAddress(provider: ContractProvider): Promise<Address> {
         const { stack } = await provider.get('get_ziver_treasury_address', []);
