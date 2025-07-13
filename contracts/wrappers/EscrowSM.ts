@@ -16,7 +16,7 @@ import {
 // FIX: Corrected file paths and re-exported types
 export * from '../EscrowSM.types';
 import { EscrowSMData, Opcodes, TaskDetails } from '../EscrowSM.types';
-import { EscrowSM as EscrowSMCompiled } from '../build/EscrowSM.compiled';
+import EscrowSMCompiled from '../build/EscrowSM.compiled.json';
 
 export class EscrowSM implements Contract {
     static readonly code: Cell = Cell.fromBoc(Buffer.from(EscrowSMCompiled.hex, 'hex'))[0];
