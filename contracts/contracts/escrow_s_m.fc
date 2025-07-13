@@ -214,7 +214,7 @@ slice get_task_details(int task_id) method_id {
             .store_coins(current_total_escrowed_funds)
             .store_uint(ziver_fee_percentage, 8)
             .store_slice(moderator_address)
-            .store_uint(current_state)
+            .store_uint(current_state, 8)
             .store_dict(proof_submission_map)
             .store_uint(query_id, 64);
 
