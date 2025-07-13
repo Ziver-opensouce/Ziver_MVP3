@@ -10,7 +10,7 @@ import {
     SendMode,
     toNano,
 } from '@ton/core';
-import { EscrowSMData, Opcodes, TaskDetails } from '../types/EscrowSM.types';
+import { EscrowSMData, Opcodes, TaskDetails } from '../EscrowSM.types';
 import EscrowSMCompiled from '../build/EscrowSM.compiled.json';
 
 export class EscrowSM implements Contract {
