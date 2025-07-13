@@ -123,7 +123,6 @@ slice get_task_details(int task_id) method_id {
 ;; Internal Message Handler (all logic here)
 ;; ============================================
 () recv_internal(int my_balance, int msg_value, cell in_msg_full_cell, slice in_msg_full) impure {
-    ;; First, handle deploy messages which have an empty body.
     if (in_msg_full.slice_empty?()) {
         return ();
     }
@@ -131,11 +130,9 @@ slice get_task_details(int task_id) method_id {
     int flags = in_msg_full~load_uint(4);
     slice sender_address = in_msg_full~load_msg_addr();
     
-    ;; Load the body of the message. In the test environment, the body is in a reference cell.
     cell msg_body_cell = in_msg_full~load_ref();
     slice in_msg_slice = msg_body_cell.begin_parse();
     
-    ;; Check if the body has enough data for an operation code and query_id
     if (in_msg_slice.slice_bits() < (32 + 64)) {
         return ();
     }
@@ -144,6 +141,80 @@ slice get_task_details(int task_id) method_id {
     
     int op = in_msg_slice~load_uint(32);
     int query_id = in_msg_slice~load_uint(64);
+
+    if (op == op_send_task_details) {
+        cell details_cell = in_msg_slice~load_ref();
+        slice details = details_cell.begin_parse();
+        int task_id = details~load_uint(64);
+        (cell _, int found) = udict_get_ref?(tasks_dict, 64, task_id);
+        throw_if(error_task_already_exists, found);
+
+        builder c = begin_cell()
+            .store_slice(sender_address) ;; task_poster_address
+            .store_slice(details)
+            .store_uint(STATE_TASK_SET_AND_FUNDS_PENDING, 8)
+            .store_dict(new_dict()) ;; proof_submission_map
+            .store_uint(query_id, 64);
+
+        tasks_dict~udict_set_ref(64, task_id, c.end_cell());
+        save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
+        return ();
+    }
+
+    int task_id = in_msg_slice~load_uint(64);
+    (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
+    throw_if(error_task_not_found, ~ found);
+
+    slice s = c.begin_parse();
+    slice task_poster_address = s~load_msg_addr();
+    int payment_per_performer_amount = s~load_coins();
+    int number_of_performers_needed = s~load_uint(32);
+    cell performers_completed = s~load_dict();
+    int completed_performers_count = s~load_uint(32);
+    int task_description_hash = s~load_uint(256);
+    int task_goal_hash = s~load_uint(256);
+    int expiry_timestamp = s~load_uint(64);
+    int current_total_escrowed_funds = s~load_coins();
+    int ziver_fee_percentage = s~load_uint(8);
+    slice moderator_address = s~load_msg_addr();
+    int current_state = s~load_uint(8);
+    cell proof_submission_map = s~load_dict();
+    int last_query_id = s~load_uint(64);
+    
+    throw_if(error_replay, query_id == last_query_id);
+
+    if (op == op_deposit_funds) {
+        ;; Your deposit logic here...
+    } elseif (op == op_verify_task_completion) {
+        ;; Your verification logic here...
+    } elseif (op == op_expire_task) {
+        ;; Your expiry logic here...
+    }
+    ;; ... etc for all your opcodes ...
+    else {
+        throw(error_unknown_opcode);
+    }
+
+    ;; Re-build the task cell with the updated state
+    builder b = begin_cell()
+        .store_slice(task_poster_address)
+        .store_coins(payment_per_performer_amount)
+        .store_uint(number_of_performers_needed, 32)
+        .store_dict(performers_completed)
+        .store_uint(completed_performers_count, 32)
+        .store_uint(task_description_hash, 256)
+        .store_uint(task_goal_hash, 256)
+        .store_uint(expiry_timestamp, 64)
+        .store_coins(current_total_escrowed_funds)
+        .store_uint(ziver_fee_percentage, 8)
+        .store_slice(moderator_address)
+        .store_uint(current_state, 8) ;; This will be the new state
+        .store_dict(proof_submission_map)
+        .store_uint(query_id, 64);
+
+    tasks_dict~udict_set_ref(64, task_id, b.end_cell());
+    save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
+}
 
     ;; ============================================
     ;; 1. Task Creation: Poster creates a new task
