@@ -51,18 +51,23 @@ describe('EscrowSM', () => {
         const nPerformers = 1n;
         const expiry = BigInt(Math.floor(Date.now() / 1000) + 2);
 
-        const setTaskBody = beginCell()
-            .storeUint(Opcodes.setTaskDetails, 32)
-            .storeUint(1n, 64)
-            .storeUint(taskId, 64) // CORRECTED
+                const detailsCell = beginCell()
+            .storeUint(taskId, 64)
             .storeCoins(payment)
-            .storeUint(nPerformers, 32) // CORRECTED
+            .storeUint(nPerformers, 32)
             .storeUint(123n, 256)
             .storeUint(456n, 256)
             .storeUint(expiry, 64)
             .storeUint(5n, 8)
             .storeAddress(moderator.address)
             .endCell();
+            
+        const setTaskBody = beginCell()
+            .storeUint(Opcodes.setTaskDetails, 32)
+            .storeUint(1n, 64) // queryID
+            .storeRef(detailsCell)
+            .endCell();
+
         await taskPoster.send({ to: escrowSM.address, value: toNano('0.05'), body: setTaskBody });
 
         let td = await escrowSM.getTaskDetails(taskId);
