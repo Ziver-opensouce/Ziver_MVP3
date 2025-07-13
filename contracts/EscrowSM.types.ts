@@ -1,7 +1,7 @@
 import { Address, Cell, Dictionary } from '@ton/core';
 
 export const Opcodes = {
-    setTaskDetails: 0x1a2b3c4d,
+    sendTaskDetails: 0x1a2b3c4d, // Aligned with the FunC constant name
     depositFunds: 0x5e6f7a8b,
     verifyTaskCompletion: 0x9c0d1e2f,
     submitProof: 0x3a4b5c6d,
