@@ -3,19 +3,9 @@ import axiosInstance from './axiosInstance';
 // --- Authentication Services ---
 
 export const loginUser = async (loginData) => {
-  // Creating a URLSearchParams object because the /token endpoint expects form data
-  const formData = new URLSearchParams();
-  formData.append('username', loginData.username);
-  formData.append('password', loginData.password);
-  if (loginData.two_fa_code) {
-    // This is a custom way to handle 2FA with form data; your backend needs to expect it
-    // Or adjust the backend to accept JSON for this endpoint
-  }
-  
   try {
-    const response = await axiosInstance.post('/token', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    });
+    // Note: Your backend /token endpoint now accepts JSON, so we send the object directly.
+    const response = await axiosInstance.post('/token', loginData);
     return response.data;
   } catch (error) {
     console.error('Login failed:', error.response?.data || error.message);
@@ -79,7 +69,6 @@ export const claimMinedZp = async () => {
 
 export const upgradeMiner = async (upgradeData) => {
   try {
-    // upgradeData should be an object like { upgrade_type: "mining_speed", level: 1 }
     const response = await axiosInstance.post('/mining/upgrade', upgradeData);
     return response.data;
   } catch (error) {
@@ -106,6 +95,48 @@ export const completeTask = async (taskId) => {
         return response.data;
     } catch (error) {
         console.error('Failed to complete task:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const createSponsoredTask = async (taskData) => {
+    try {
+        const response = await axiosInstance.post('/tasks/sponsor', taskData);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to create sponsored task:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+// --- Micro-Job Marketplace Services ---
+
+export const getMicrojobs = async () => {
+    try {
+        const response = await axiosInstance.get('/microjobs');
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch micro-jobs:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const createMicrojob = async (jobData) => {
+    try {
+        const response = await axiosInstance.post('/microjobs', jobData);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to create micro-job:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const activateJob = async (jobId) => {
+    try {
+        const response = await axiosInstance.post(`/microjobs/${jobId}/activate`);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to activate job:', error.response?.data || error.message);
         throw error;
     }
 };
