@@ -1,6 +1,7 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { Address, beginCell, Cell, Dictionary, toNano } from '@ton/core';
-import { EscrowSM, EscrowSMData, Opcodes, EscrowState } from '../wrappers/EscrowSM';
+import { EscrowSM } from '../wrappers/EscrowSM';
+import { EscrowSMData, Opcodes, EscrowState } from '../types/EscrowSM.types';
 import '@ton/test-utils';
 
 describe('EscrowSM', () => {
