@@ -1,22 +1,29 @@
-import { toNano } from '@ton/core';
+import { Address, toNano, Dictionary } from '@ton/core'; // FIX: Added Address and Dictionary imports
 import { EscrowSM } from '../wrappers/EscrowSM';
 import { compile, NetworkProvider } from '@ton/blueprint';
-import { Opcodes } from '../EscrowSM.types'; // Make sure opcodes are imported if needed for config
+import { EscrowSMData } from '../EscrowSM.types';
 
 export async function run(provider: NetworkProvider) {
-    // IMPORTANT: Replace this with your actual Ziver Treasury Address
-    const ziverTreasuryAddress = Address.parse('UQDl_5CtQqwxSKk9EoUbgKV6XsSDQqqkYYeZ0UFduTZuCtlP');
+    // The treasury address to be stored in the contract.
+    // For this test, we can use your own wallet address which is deploying the contract.
+    const ziverTreasuryAddress = provider.sender().address;
+    if (!ziverTreasuryAddress) {
+        throw new Error("Sender address is not defined in the provider!");
+    }
 
-    const escrowSM = provider.open(EscrowSM.createFromConfig({
+    const initialConfig: EscrowSMData = {
         ziverTreasuryAddress: ziverTreasuryAddress,
-        tasks: new Map(), // Use Map for initial config
+        tasks: Dictionary.empty(), // FIX: Use Dictionary.empty() instead of new Map()
         accumulatedFees: 0n
-    }));
+    };
+
+    const escrowSM = provider.open(EscrowSM.createFromConfig(initialConfig));
 
     await escrowSM.sendDeploy(provider.sender(), toNano('0.05'));
 
     await provider.waitForDeploy(escrowSM.address);
 
-    console.log('EscrowSM deployed at address:', escrowSM.address);
-    console.log('Ziver Treasury set to:', ziverTreasuryAddress);
+    console.log('✅ EscrowSM Deployed Successfully!');
+    console.log('Contract Address:', escrowSM.address.toString());
+    console.log('Treasury Address Set To:', ziverTreasuryAddress.toString());
 }
