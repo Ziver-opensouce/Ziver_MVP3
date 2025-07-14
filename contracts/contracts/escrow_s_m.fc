@@ -1,12 +1,15 @@
 ;; ============================================
 ;; Ziver Escrow Smart Contract (escrow_s_m.fc)
-;; DEBUGGING VERSION WITH LOGS
+;; DEBUGGING VERSION WITH LOGS (v2)
 ;; ============================================
 
 #include "imports/stdlib.fc";
 
 ;; Helper function to compare two slices
 int slice_equal? (slice a, slice b) asm "SDEQ";
+
+;; FIX: Define our own logging function using the TVM DUMP instruction
+() log(int x) impure asm "DUMP";
 
 ;; [ ... Constants and Error Codes remain the same ... ]
 const int error_not_treasury = 100;
@@ -49,7 +52,7 @@ const int STATE_REFUNDED = 7;
 }
 
 () save_data(slice ziver_treasury_address, cell tasks_dict, int accumulated_ziver_fees) impure inline {
-    dump(999); ;; LOG: Final save point reached
+    log(999); ;; LOG: Final save point reached
     set_data(
         begin_cell()
             .store_slice(ziver_treasury_address)
@@ -71,7 +74,7 @@ int get_accumulated_fees() method_id {
     var (_, tasks_dict, _) = load_data();
     (cell c, int found) = udict_get_ref?(tasks_dict, 64, task_id);
     ;; LOG: Getter check
-    dump(1000); dump(task_id); dump(found);
+    log(1000); log(task_id); log(found);
     if (~ found) {
         return (null(), 0, 0, null(), 0, 0, 0, 0, 0, 0, null(), 0, null(), 0);
     }
@@ -109,16 +112,16 @@ int get_accumulated_fees() method_id {
     int query_id = in_msg_body~load_uint(64);
 
     ;; LOG: Entry point
-    dump(100); dump(op); dump(query_id);
+    log(100); log(op); log(query_id);
 
     (slice ziver_treasury_address, cell tasks_dict, int accumulated_ziver_fees) = load_data();
 
     if (op == op_send_task_details) {
         ;; LOG: Inside sendTaskDetails
-        dump(200);
+        log(200);
         slice details_slice = in_msg_body~load_ref().begin_parse();
         int task_id = details_slice~load_uint(64);
-        dump(task_id);
+        log(task_id);
 
         ;; [ ... rest of the op_send_task_details logic ... ]
         (cell task_cell, int found) = udict_get_ref?(tasks_dict, 64, task_id);
@@ -138,7 +141,7 @@ int get_accumulated_fees() method_id {
     throw_if(error_task_not_found, ~ found);
 
     ;; LOG: Found task, proceeding to modify
-    dump(300); dump(task_id);
+    log(300); log(task_id);
 
     slice s = c.begin_parse();
     slice task_poster_address = s~load_msg_addr();
@@ -157,14 +160,14 @@ int get_accumulated_fees() method_id {
     int last_query_id = s~load_uint(64);
 
     ;; LOG: Replay check values
-    dump(301); dump(query_id); dump(last_query_id);
+    log(301); log(query_id); log(last_query_id);
     throw_if(error_replay, query_id <= last_query_id);
 
     if (op == op_deposit_funds) {
         ;; LOG: Inside depositFunds
-        dump(400); dump(msg_value); dump(escrowed_funds);
+        log(400); log(msg_value); log(escrowed_funds);
         escrowed_funds += msg_value;
-        dump(escrowed_funds);
+        log(escrowed_funds);
         
         ;; [ ... rest of the op_deposit_funds logic ... ]
         throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
@@ -180,7 +183,7 @@ int get_accumulated_fees() method_id {
         }
     } elseif (op == op_verify_task_completion) {
         ;; LOG: Inside verifyTask
-        dump(500);
+        log(500);
         
         ;; [ ... all other op-codes ... ]
         slice p_address = in_msg_body~load_msg_addr();
@@ -202,10 +205,11 @@ int get_accumulated_fees() method_id {
         }
     } else {
         ;; All other ops for brevity...
+        ;; You would add more `elseif` blocks for other op-codes here
     }
 
     ;; LOG: About to build final cell and save
-    dump(900); dump(current_state); dump(escrowed_funds); dump(query_id);
+    log(900); log(current_state); log(escrowed_funds); log(query_id);
 
     builder b = begin_cell()
         .store_slice(task_poster_address).store_coins(payment_per_performer).store_uint(number_of_performers, 32).store_dict(performers_completed)
