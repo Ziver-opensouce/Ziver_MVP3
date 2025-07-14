@@ -46,14 +46,19 @@ int get_value() method_id {
         int value_to_save = in_msg_slice~load_uint(64);
         save_data(value_to_save);
 
-        ;; FIX: Add a clean response to signal completion and commit the state change.
+        ;; FIX: Explicitly accept the message to commit state changes.
+        ;; This is the "save button" for the contract's storage.
+        accept_message;
+
+        ;; It's still good practice to send the remaining gas back.
         send_raw_message(
             begin_cell().store_uint(0x10, 6)
                         .store_slice(sender_address)
                         .store_coins(0)
                         .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
                         .end_cell(),
-            64 ;; mode 64 = send all remaining value
+            64
         );
     }
 }
+
