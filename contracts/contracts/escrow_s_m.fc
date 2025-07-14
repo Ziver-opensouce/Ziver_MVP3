@@ -115,7 +115,8 @@ int get_accumulated_fees() method_id {
         int fee_pct = in_msg_slice~load_uint(8);
         slice moderator = in_msg_slice~load_msg_addr();
 
-        throw_if(error_task_already_exists, udict_get?(tasks_dict, 64, task_id));
+        (slice _, int found) = udict_get?(tasks_dict, 64, task_id);
+throw_if(error_task_already_exists, found);
 
         builder c = begin_cell()
             .store_slice(sender_address).store_coins(payment).store_uint(n_performers, 32).store_dict(new_dict())
