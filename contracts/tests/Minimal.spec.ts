@@ -1,5 +1,6 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Cell, toNano } from '@ton/core';
+import { Blockchain, SandboxContract, TreasuryContract, Sender } from '@ton/sandbox';
+import { Address, beginCell, Cell, ContractProvider, contractAddress, toNano } from '@ton/core';
+import '@ton/test-utils'; // This import adds the .toHaveTransaction() matcher
 import { compile } from '@ton/blueprint';
 
 // A minimal wrapper for our new contract
@@ -16,7 +17,7 @@ class MinimalContract {
         const msgBody = beginCell()
             .storeUint(0x1, 32) // opcode
             .storeUint(value, 64)
-            .end_cell();
+            .endCell();
 
         return sender.send({
             to: this.address,
@@ -31,7 +32,6 @@ class MinimalContract {
     }
 }
 
-
 describe('Minimal Contract Test', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
@@ -39,7 +39,6 @@ describe('Minimal Contract Test', () => {
     let code: Cell;
 
     beforeAll(async () => {
-        // Compile our new minimal contract
         code = await compile('minimal');
     });
 
@@ -47,7 +46,6 @@ describe('Minimal Contract Test', () => {
         blockchain = await Blockchain.create();
         deployer = await blockchain.treasury('deployer');
 
-        // Manually create and deploy the contract
         const minimal = await MinimalContract.createFromConfig(code);
         minimalContract = blockchain.openContract(minimal);
 
@@ -68,7 +66,6 @@ describe('Minimal Contract Test', () => {
     });
 
     it('should set and get a new value', async () => {
-        // Send a message to set the value to 123
         const setValueResult = await minimalContract.sendSetValue(deployer.getSender(), 123n);
 
         expect(setValueResult.transactions).toHaveTransaction({
@@ -77,7 +74,6 @@ describe('Minimal Contract Test', () => {
             success: true,
         });
 
-        // Check if the value was updated correctly
         expect(await minimalContract.getValue()).toEqual(123n);
     });
 });
