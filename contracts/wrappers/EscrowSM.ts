@@ -44,7 +44,7 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendSetTaskDetails(
+        async sendSetTaskDetails(
         provider: ContractProvider,
         via: Sender,
         opts: {
@@ -60,20 +60,25 @@ export class EscrowSM implements Contract {
             queryID?: bigint;
         }
     ) {
+        // FIX: Pack details into a reference cell to prevent overflow
+        const detailsCell = beginCell()
+            .storeUint(opts.taskId, 64)
+            .storeCoins(opts.paymentPerPerformerAmount)
+            .storeUint(opts.numberOfPerformersNeeded, 32)
+            .storeUint(opts.taskDescriptionHash, 256)
+            .storeUint(opts.taskGoalHash, 256)
+            .storeUint(opts.expiryTimestamp, 64)
+            .storeUint(opts.ziverFeePercentage, 8)
+            .storeAddress(opts.moderatorAddress)
+            .endCell();
+
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.sendTaskDetails, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64)
-                .storeCoins(opts.paymentPerPerformerAmount)
-                .storeUint(opts.numberOfPerformersNeeded, 32)
-                .storeUint(opts.taskDescriptionHash, 256)
-                .storeUint(opts.taskGoalHash, 256)
-                .storeUint(opts.expiryTimestamp, 64)
-                .storeUint(opts.ziverFeePercentage, 8)
-                .storeAddress(opts.moderatorAddress)
+                .storeRef(detailsCell) // Store the packed details as a reference
                 .endCell(),
         });
     }
