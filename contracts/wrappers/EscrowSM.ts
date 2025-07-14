@@ -46,23 +46,32 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendSetTaskDetails(
-        provider: ContractProvider,
-        via: Sender,
-        opts: {
-            taskId: bigint;
-            paymentPerPerformerAmount: bigint;
-            numberOfPerformersNeeded: bigint;
-            taskDescriptionHash: bigint;
-            taskGoalHash: bigint;
-            expiryTimestamp: bigint;
-            ziverFeePercentage: bigint;
-            moderatorAddress: Address;
-            value: bigint;
-            queryID?: bigint;
-        }
-    ) {
-        const detailsCell = beginCell()
+    // In wrappers/EscrowSM.ts
+
+async sendSetTaskDetails(
+    provider: ContractProvider,
+    via: Sender,
+    opts: {
+        taskId: bigint;
+        paymentPerPerformerAmount: bigint;
+        numberOfPerformersNeeded: bigint;
+        taskDescriptionHash: bigint;
+        taskGoalHash: bigint;
+        expiryTimestamp: bigint;
+        ziverFeePercentage: bigint;
+        moderatorAddress: Address;
+        value: bigint;
+        queryID?: bigint;
+    }
+) {
+    // FIX: Remove the separate cell and store all data inline
+    await provider.internal(via, {
+        value: opts.value,
+        sendMode: SendMode.PAY_GAS_SEPARATELY,
+        body: beginCell()
+            .storeUint(Opcodes.sendTaskDetails, 32)
+            .storeUint(opts.queryID ?? 0, 64)
+            // Storing all fields directly in the body
             .storeUint(opts.taskId, 64)
             .storeCoins(opts.paymentPerPerformerAmount)
             .storeUint(opts.numberOfPerformersNeeded, 32)
@@ -71,7 +80,9 @@ export class EscrowSM implements Contract {
             .storeUint(opts.expiryTimestamp, 64)
             .storeUint(opts.ziverFeePercentage, 8)
             .storeAddress(opts.moderatorAddress)
-            .endCell();
+            .endCell(),
+    });
+}
 
         await provider.internal(via, {
             value: opts.value,
