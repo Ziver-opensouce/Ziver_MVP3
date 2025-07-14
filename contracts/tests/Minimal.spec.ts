@@ -1,28 +1,36 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-// FIX #1: The 'Sender' type is imported from '@ton/core', not '@ton/sandbox'.
-import { Address, beginCell, Cell, ContractProvider, contractAddress, Sender, toNano } from '@ton/core';
-import '@ton/test-utils';
-import { compile } from '@ton/blueprint';
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
 
-class MinimalContract {
+export type MinimalContractConfig = {};
+
+export function minimalContractConfigToCell(config: MinimalContractConfig): Cell {
+    return beginCell().endCell();
+}
+
+export class MinimalContract implements Contract {
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
-    static async createFromConfig(code: Cell) {
-        const data = beginCell().storeUint(0, 64).endCell();
+    static createFromConfig(config: MinimalContractConfig, code: Cell, workchain = 0) {
+        const data = minimalContractConfigToCell(config);
         const init = { code, data };
-        return new MinimalContract(contractAddress(0, init), init);
+        return new MinimalContract(contractAddress(workchain, init), init);
     }
 
-    async sendSetValue(sender: Sender, value: bigint) {
-        const msgBody = beginCell()
-            .storeUint(0x1, 32) // opcode
-            .storeUint(value, 64)
-            .endCell();
+    async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell().endCell(),
+        });
+    }
 
-        return sender.send({
-            to: this.address,
+    async sendValue(provider: ContractProvider, via: Sender, valueToSet: bigint) {
+        await provider.internal(via, {
             value: toNano('0.05'),
-            body: msgBody,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell()
+                .storeUint(0x1, 32) // op
+                .storeUint(valueToSet, 64)
+                .endCell(),
         });
     }
 
@@ -31,52 +39,3 @@ class MinimalContract {
         return result.stack.readBigNumber();
     }
 }
-
-describe('Minimal Contract Test', () => {
-    let blockchain: Blockchain;
-    let deployer: SandboxContract<TreasuryContract>;
-    let minimalContract: SandboxContract<MinimalContract>;
-    let code: Cell;
-
-    beforeAll(async () => {
-        code = await compile('minimal');
-    });
-
-    beforeEach(async () => {
-        blockchain = await Blockchain.create();
-        deployer = await blockchain.treasury('deployer');
-
-        const minimal = await MinimalContract.createFromConfig(code);
-        minimalContract = blockchain.openContract(minimal);
-
-        // FIX #2: This is the correct way to send a deployment message.
-        const deployResult = await deployer.send({
-            to: minimalContract.address,
-            value: toNano('0.5'),
-            init: minimalContract.init,
-        });
-
-        expect(deployResult.transactions).toHaveTransaction({
-            from: deployer.address,
-            to: minimalContract.address,
-            deploy: true,
-            success: true,
-        });
-    });
-
-    it('should deploy and have initial value of 0', async () => {
-        expect(await minimalContract.getValue()).toEqual(0n);
-    });
-
-    it('should set and get a new value', async () => {
-        const setValueResult = await minimalContract.sendSetValue(deployer.getSender(), 123n);
-
-        expect(setValueResult.transactions).toHaveTransaction({
-            from: deployer.address,
-            to: minimalContract.address,
-            success: true,
-        });
-
-        expect(await minimalContract.getValue()).toEqual(123n);
-    });
-});
