@@ -1,16 +1,17 @@
 import { Address, Cell, Dictionary } from '@ton/core';
 
+// In EscrowSM.types.ts
 export const Opcodes = {
-    sendTaskDetails: 0x1a2b3c4d, // Aligned with the FunC constant name
+    sendTaskDetails: 0x1a2b3c4d,
     depositFunds: 0x5e6f7a8b,
     verifyTaskCompletion: 0x9c0d1e2f,
-    submitProof: 0x3a4b5c6d,
     raiseDispute: 0x7e8f9a0b,
     resolveDispute: 0x11223344,
     cancelTaskAndRefund: 0x99aabbcc,
     withdrawFee: 0xddccbbaa,
     expireTask: 0xaabbccdd,
 };
+
 
 // States for the task lifecycle
 export enum EscrowState {
