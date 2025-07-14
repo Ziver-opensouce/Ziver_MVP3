@@ -1,4 +1,4 @@
-// Final, Corrected wrappers/EscrowSM.ts
+// wrappers/EscrowSM.ts
 
 import {
     Address,
@@ -7,36 +7,36 @@ import {
     Contract,
     contractAddress,
     ContractProvider,
-    Dictionary,
     Sender,
     SendMode,
+    Dictionary,
+    TupleReader,
 } from '@ton/core';
 import { EscrowSMData, Opcodes, TaskDetails } from '../EscrowSM.types';
 import EscrowSMCompiled from '../build/EscrowSM.compiled.json';
 
+export function EscrowSMConfigToCell(config: EscrowSMData): Cell {
+    return beginCell()
+        .storeAddress(config.ziverTreasuryAddress)
+        .storeDict(config.tasks)
+        .storeCoins(config.accumulatedFees)
+        .endCell();
+}
+
+export const EscrowSMCode = Cell.fromBoc(Buffer.from(EscrowSMCompiled.hex, 'hex'))[0];
+
 export class EscrowSM implements Contract {
-    static readonly code: Cell = Cell.fromBoc(Buffer.from(EscrowSMCompiled.hex, 'hex'))[0];
+    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
     static createFromAddress(address: Address) {
         return new EscrowSM(address);
     }
 
-    static createDataCell(initialData: EscrowSMData): Cell {
-        return beginCell()
-            .storeAddress(initialData.ziverTreasuryAddress)
-            .storeDict(initialData.tasks)
-            .storeCoins(initialData.accumulatedFees)
-            .endCell();
+    static createFromConfig(config: EscrowSMData, workchain = 0) {
+        const data = EscrowSMConfigToCell(config);
+        const init = { code: EscrowSMCode, data };
+        return new EscrowSM(contractAddress(workchain, init), init);
     }
-
-    static async createFromConfig(initialData: EscrowSMData, workchain: number = 0) {
-        const data = this.createDataCell(initialData);
-        const init = { code: this.code, data };
-        const address = contractAddress(workchain, init);
-        return new EscrowSM(address, init);
-    }
-
-    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
     async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
         await provider.internal(via, {
@@ -46,55 +46,41 @@ export class EscrowSM implements Contract {
         });
     }
 
-    // In wrappers/EscrowSM.ts
-
-async sendSetTaskDetails(
-    provider: ContractProvider,
-    via: Sender,
-    opts: {
-        taskId: bigint;
-        paymentPerPerformerAmount: bigint;
-        numberOfPerformersNeeded: bigint;
-        taskDescriptionHash: bigint;
-        taskGoalHash: bigint;
-        expiryTimestamp: bigint;
-        ziverFeePercentage: bigint;
-        moderatorAddress: Address;
-        value: bigint;
-        queryID?: bigint;
-    }
-) {
-    // FIX: Remove the separate cell and store all data inline
-    await provider.internal(via, {
-        value: opts.value,
-        sendMode: SendMode.PAY_GAS_SEPARATELY,
-        body: beginCell()
-            .storeUint(Opcodes.sendTaskDetails, 32)
-            .storeUint(opts.queryID ?? 0, 64)
-            // Storing all fields directly in the body
-            .storeUint(opts.taskId, 64)
-            .storeCoins(opts.paymentPerPerformerAmount)
-            .storeUint(opts.numberOfPerformersNeeded, 32)
-            .storeUint(opts.taskDescriptionHash, 256)
-            .storeUint(opts.taskGoalHash, 256)
-            .storeUint(opts.expiryTimestamp, 64)
-            .storeUint(opts.ziverFeePercentage, 8)
-            .storeAddress(opts.moderatorAddress)
-            .endCell(),
-    });
-}
-
+    async sendSetTaskDetails(
+        provider: ContractProvider,
+        via: Sender,
+        opts: {
+            taskId: bigint;
+            paymentPerPerformerAmount: bigint;
+            numberOfPerformersNeeded: bigint;
+            taskDescriptionHash: bigint;
+            taskGoalHash: bigint;
+            expiryTimestamp: bigint;
+            ziverFeePercentage: bigint;
+            moderatorAddress: Address;
+            value: bigint;
+            queryID?: bigint;
+        }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.sendTaskDetails, 32)
                 .storeUint(opts.queryID ?? 0, 64)
-                .storeRef(detailsCell)
+                .storeUint(opts.taskId, 64)
+                .storeCoins(opts.paymentPerPerformerAmount)
+                .storeUint(opts.numberOfPerformersNeeded, 32)
+                .storeUint(opts.taskDescriptionHash, 256)
+                .storeUint(opts.taskGoalHash, 256)
+                .storeUint(opts.expiryTimestamp, 64)
+                .storeUint(opts.ziverFeePercentage, 8)
+                .storeAddress(opts.moderatorAddress)
                 .endCell(),
         });
     }
-
+    
+    // All other 'send' methods follow the same pattern
     async sendDepositFunds(provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint }) {
         await provider.internal(via, {
             value: opts.value,
@@ -119,20 +105,7 @@ async sendSetTaskDetails(
                 .endCell(),
         });
     }
-
-    async sendSubmitProof(provider: ContractProvider, via: Sender, opts: { taskId: bigint; proofHash: bigint; value: bigint; queryID?: bigint }) {
-        await provider.internal(via, {
-            value: opts.value,
-            sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell()
-                .storeUint(Opcodes.submitProof, 32)
-                .storeUint(opts.queryID ?? 0, 64)
-                .storeUint(opts.taskId, 64)
-                .storeUint(opts.proofHash, 256)
-                .endCell(),
-        });
-    }
-
+    
     async sendRaiseDispute(provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint }) {
         await provider.internal(via, {
             value: opts.value,
@@ -193,56 +166,34 @@ async sendSetTaskDetails(
         });
     }
 
+    // Getter methods
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
         const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
-        const stack = result.stack;
+        
+        function parseTuple(stack: TupleReader): TaskDetails | null {
+            const taskPosterAddress = stack.readAddressOpt();
+            if (!taskPosterAddress) return null;
 
-        const taskPosterAddress = stack.readAddressOpt();
-        if (!taskPosterAddress) {
-            return null; // Task not found
+            return {
+                taskPosterAddress,
+                paymentPerPerformerAmount: stack.readBigNumber(),
+                numberOfPerformersNeeded: stack.readBigNumber(),
+                performersCompleted: stack.readCell().beginParse().loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell()),
+                completedPerformersCount: stack.readBigNumber(),
+                taskDescriptionHash: stack.readBigNumber(),
+                taskGoalHash: stack.readBigNumber(),
+                expiryTimestamp: stack.readBigNumber(),
+                totalEscrowedFunds: stack.readBigNumber(),
+                ziverFeePercentage: BigInt(stack.readNumber()),
+                moderatorAddress: stack.readAddress(),
+                currentState: stack.readNumber(),
+                proofSubmissionMap: stack.readCell().beginParse().loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell()),
+                lastQueryId: stack.readBigNumber(),
+            };
         }
-
-        const paymentPerPerformerAmount = stack.readBigNumber();
-        const numberOfPerformersNeeded = stack.readBigNumber();
-
-        const performersCompletedCell = stack.readCellOpt();
-        const completedPerformersCount = stack.readBigNumber();
-        const taskDescriptionHash = stack.readBigNumber();
-        const taskGoalHash = stack.readBigNumber();
-        const expiryTimestamp = stack.readBigNumber();
-        const totalEscrowedFunds = stack.readBigNumber();
-        const ziverFeePercentage = BigInt(stack.readNumber());
-        const moderatorAddress = stack.readAddress();
-        const currentState = stack.readNumber();
-        const proofSubmissionMapCell = stack.readCellOpt();
-        const lastQueryId = stack.readBigNumber();
-
-        const performersCompleted = performersCompletedCell
-            ? performersCompletedCell.beginParse().loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
-            : Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell());
-
-        const proofSubmissionMap = proofSubmissionMapCell
-            ? proofSubmissionMapCell.beginParse().loadDict(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
-            : Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell());
-
-        return {
-            taskPosterAddress,
-            paymentPerPerformerAmount,
-            numberOfPerformersNeeded,
-            performersCompleted,
-            completedPerformersCount,
-            taskDescriptionHash,
-            taskGoalHash,
-            expiryTimestamp,
-            totalEscrowedFunds,
-            ziverFeePercentage,
-            moderatorAddress,
-            currentState,
-            proofSubmissionMap,
-            lastQueryId,
-        };
+        return parseTuple(result.stack);
     }
-
+    
     async getZiverTreasuryAddress(provider: ContractProvider): Promise<Address> {
         const { stack } = await provider.get('get_ziver_treasury_address', []);
         return stack.readAddress();
