@@ -1,9 +1,9 @@
-import { Blockchain, SandboxContract, TreasuryContract, Sender } from '@ton/sandbox';
-import { Address, beginCell, Cell, ContractProvider, contractAddress, toNano } from '@ton/core';
-import '@ton/test-utils'; // This import adds the .toHaveTransaction() matcher
+import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
+// FIX #1: The 'Sender' type is imported from '@ton/core', not '@ton/sandbox'.
+import { Address, beginCell, Cell, ContractProvider, contractAddress, Sender, toNano } from '@ton/core';
+import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 
-// A minimal wrapper for our new contract
 class MinimalContract {
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
@@ -49,9 +49,12 @@ describe('Minimal Contract Test', () => {
         const minimal = await MinimalContract.createFromConfig(code);
         minimalContract = blockchain.openContract(minimal);
 
-        const deployResult = await minimalContract.send(deployer.getSender(), {
-             value: toNano('0.5')
-        }, { $$type: 'Deploy', queryId: 0n });
+        // FIX #2: This is the correct way to send a deployment message.
+        const deployResult = await deployer.send({
+            to: minimalContract.address,
+            value: toNano('0.5'),
+            init: minimalContract.init,
+        });
 
         expect(deployResult.transactions).toHaveTransaction({
             from: deployer.address,
