@@ -1,27 +1,22 @@
-import { toNano, Address, Dictionary } from '@ton/core';
-import { EscrowSM, EscrowSMData } from '../wrappers/EscrowSM';
-import { NetworkProvider } from '@ton/blueprint';
+import { toNano } from '@ton/core';
+import { EscrowSM } from '../wrappers/EscrowSM';
+import { compile, NetworkProvider } from '@ton/blueprint';
+import { Opcodes } from '../EscrowSM.types'; // Make sure opcodes are imported if needed for config
 
 export async function run(provider: NetworkProvider) {
     // IMPORTANT: Replace this with your actual Ziver Treasury Address
     const ziverTreasuryAddress = Address.parse('UQDl_5CtQqwxSKk9EoUbgKV6XsSDQqqkYYeZ0UFduTZuCtlP');
 
-    // Initial data for the contract, matching the EscrowSMData type
-    const initialData: EscrowSMData = {
+    const escrowSM = provider.open(EscrowSM.createFromConfig({
         ziverTreasuryAddress: ziverTreasuryAddress,
-        tasks: Dictionary.empty(),
-        accumulatedFees: 0n, // FIX: Added missing 'accumulatedFees' field
-    };
+        tasks: new Map(), // Use Map for initial config
+        accumulatedFees: 0n
+    }));
 
-    // Create a new instance of the contract
-    const escrowSM = provider.open(await EscrowSM.createFromConfig(initialData));
+    await escrowSM.sendDeploy(provider.sender(), toNano('0.05'));
 
-    // Send the deploy transaction using the method from our wrapper
-    await escrowSM.sendDeploy(provider.sender(), toNano('0.1'));
-
-    // Wait for the contract to be deployed
     await provider.waitForDeploy(escrowSM.address);
 
-    console.log('EscrowSM contract deployed successfully!');
-    console.log(`Contract Address: ${escrowSM.address.toString()}`);
+    console.log('EscrowSM deployed at address:', escrowSM.address);
+    console.log('Ziver Treasury set to:', ziverTreasuryAddress);
 }
