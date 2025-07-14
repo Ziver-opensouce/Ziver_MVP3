@@ -30,7 +30,6 @@ describe('EscrowSM', () => {
             accumulatedFees: 0n,
         };
 
-       escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData, 0));
        escrowSM = blockchain.openContract(EscrowSM.createFromConfig(initialData, 0));
 
         const deployResult = await escrowSM.sendDeploy(deployer.getSender(), toNano('0.05'));
