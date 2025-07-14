@@ -127,17 +127,19 @@ int get_accumulated_fees() method_id {
 
     (slice ziver_treasury_address, cell tasks_dict, int accumulated_ziver_fees) = load_data();
 
-    if (op == op_send_task_details) {
-        int task_id = in_msg_body~load_uint(64);
-        int payment = in_msg_body~load_coins();
-        int n_performers = in_msg_body~load_uint(32);
-        int desc_hash = in_msg_body~load_uint(256);
-        int goal_hash = in_msg_body~load_uint(256);
-        int expiry = in_msg_body~load_uint(64);
-        int fee_pct = in_msg_body~load_uint(8);
-        slice moderator = in_msg_body~load_msg_addr();
+        if (op == op_send_task_details) {
+        ;; FIX: Load the details from a reference cell to prevent overflow
+        slice details_slice = in_msg_body~load_ref().begin_parse();
 
-        ;; FIX: Safer check for existing task
+        int task_id = details_slice~load_uint(64);
+        int payment = details_slice~load_coins();
+        int n_performers = details_slice~load_uint(32);
+        int desc_hash = details_slice~load_uint(256);
+        int goal_hash = details_slice~load_uint(256);
+        int expiry = details_slice~load_uint(64);
+        int fee_pct = details_slice~load_uint(8);
+        slice moderator = details_slice~load_msg_addr();
+
         (cell task_cell, int found) = udict_get_ref?(tasks_dict, 64, task_id);
         throw_if(error_task_already_exists, found);
 
