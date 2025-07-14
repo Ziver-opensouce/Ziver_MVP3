@@ -72,7 +72,6 @@ const int STATE_REFUNDED = 7;
 }
 
 () send_response(slice to_address) impure inline {
-    ;; Helper to send a standard response with remaining value.
     send_raw_message(begin_cell().store_uint(0x10, 6).store_slice(to_address).store_coins(0).store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1).end_cell(), 64);
 }
 
@@ -152,7 +151,10 @@ int get_accumulated_fees() method_id {
 
         tasks_dict = udict_set_ref(tasks_dict, 64, task_id, c.end_cell());
         save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
-        send_response(sender_address);
+        
+        commit();
+        accept_message;
+        
         return ();
 
     } elseif (op == op_withdraw_fee) {
@@ -162,6 +164,9 @@ int get_accumulated_fees() method_id {
         int amount_to_withdraw = accumulated_ziver_fees;
         accumulated_ziver_fees = 0;
         save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
+        
+        commit();
+        accept_message;
 
         send_raw_message(begin_cell().store_uint(0x18, 6).store_slice(ziver_treasury_address).store_coins(amount_to_withdraw).store_uint(0, 1).end_cell(), 1);
         return ();
@@ -188,6 +193,10 @@ int get_accumulated_fees() method_id {
     int last_query_id = s~load_uint(64);
 
     throw_if(error_replay, query_id == last_query_id);
+
+    if ((op != op_submit_proof) & (op != op_expire_task)) {
+      send_response(sender_address);
+    }
 
     if (op == op_deposit_funds) {
         throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
@@ -268,7 +277,6 @@ int get_accumulated_fees() method_id {
         current_state = STATE_DISPUTED;
 
     } elseif (op == op_submit_proof) {
-         send_response(sender_address);
          return ();
 
     } else {
@@ -294,6 +302,6 @@ int get_accumulated_fees() method_id {
     tasks_dict = udict_set_ref(tasks_dict, 64, task_id, b.end_cell());
     save_data(ziver_treasury_address, tasks_dict, accumulated_ziver_fees);
 
-    ;; Add the clean completion signal to all operations that fall through
-    send_response(sender_address);
+    commit();
+    accept_message;
 }
