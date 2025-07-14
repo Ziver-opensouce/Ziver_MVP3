@@ -14,7 +14,7 @@ describe('EscrowSM', () => {
     let performer2: SandboxContract<TreasuryContract>;
     let moderator: SandboxContract<TreasuryContract>;
 
-    // This runs before each test
+        // This runs before each test
     beforeEach(async () => {
         blockchain = await Blockchain.create();
         deployer = await blockchain.treasury('deployer');
@@ -30,7 +30,8 @@ describe('EscrowSM', () => {
             accumulatedFees: 0n,
         };
 
-        escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData, 0));
+-       escrowSM = blockchain.openContract(await EscrowSM.createFromConfig(initialData, 0));
++       escrowSM = blockchain.openContract(EscrowSM.createFromConfig(initialData, 0));
 
         const deployResult = await escrowSM.sendDeploy(deployer.getSender(), toNano('0.05'));
         expect(deployResult.transactions).toHaveTransaction({
