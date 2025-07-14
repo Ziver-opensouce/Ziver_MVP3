@@ -1,5 +1,3 @@
-// wrappers/EscrowSM.ts
-
 import {
     Address,
     beginCell,
@@ -79,9 +77,12 @@ export class EscrowSM implements Contract {
                 .endCell(),
         });
     }
-    
-    // All other 'send' methods follow the same pattern
-    async sendDepositFunds(provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint }) {
+
+    async sendDepositFunds(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { taskId: bigint; value: bigint; queryID?: bigint }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -93,7 +94,11 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendVerifyTaskCompletion( provider: ContractProvider, via: Sender, opts: { taskId: bigint; performerAddress: Address; value: bigint; queryID?: bigint }) {
+    async sendVerifyTaskCompletion(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { taskId: bigint; performerAddress: Address; value: bigint; queryID?: bigint }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -105,8 +110,12 @@ export class EscrowSM implements Contract {
                 .endCell(),
         });
     }
-    
-    async sendRaiseDispute(provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint }) {
+
+    async sendRaiseDispute(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { taskId: bigint; value: bigint; queryID?: bigint }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -118,7 +127,11 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendResolveDispute(provider: ContractProvider, via: Sender, opts: { taskId: bigint; winnerAddress: Address; value: bigint; queryID?: bigint }) {
+    async sendResolveDispute(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { taskId: bigint; winnerAddress: Address; value: bigint; queryID?: bigint }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -131,7 +144,11 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendCancelTaskAndRefund(provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint }) {
+    async sendCancelTaskAndRefund(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { taskId: bigint; value: bigint; queryID?: bigint }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -154,7 +171,11 @@ export class EscrowSM implements Contract {
         });
     }
 
-    async sendExpireTask(provider: ContractProvider, via: Sender, opts: { taskId: bigint; value: bigint; queryID?: bigint }) {
+    async sendExpireTask(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { taskId: bigint; value: bigint; queryID?: bigint }
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -166,10 +187,9 @@ export class EscrowSM implements Contract {
         });
     }
 
-    // Getter methods
     async getTaskDetails(provider: ContractProvider, taskId: bigint): Promise<TaskDetails | null> {
         const result = await provider.get('get_task_details', [{ type: 'int', value: taskId }]);
-        
+
         function parseTuple(stack: TupleReader): TaskDetails | null {
             const taskPosterAddress = stack.readAddressOpt();
             if (!taskPosterAddress) return null;
@@ -193,7 +213,7 @@ export class EscrowSM implements Contract {
         }
         return parseTuple(result.stack);
     }
-    
+
     async getZiverTreasuryAddress(provider: ContractProvider): Promise<Address> {
         const { stack } = await provider.get('get_ziver_treasury_address', []);
         return stack.readAddress();
