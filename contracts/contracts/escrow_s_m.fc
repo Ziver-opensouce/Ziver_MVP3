@@ -190,7 +190,8 @@ int get_accumulated_fees() method_id {
         throw_if(error_not_task_poster, ~ slice_equal?(sender_address, task_poster_address));
         throw_if(error_invalid_state, current_state != STATE_TASK_SET_AND_FUNDS_PENDING);
         int total_payment_needed = payment_per_performer * number_of_performers;
-        escrowed_funds += (msg_value - my_balance); ;; Use incoming value, not total message value
+        escrowed_funds += msg_value;
+ ;; Use incoming value, not total message value
         if (escrowed_funds >= total_payment_needed) {
             current_state = STATE_ACTIVE;
             int overpayment = escrowed_funds - total_payment_needed;
